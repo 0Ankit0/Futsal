@@ -47,6 +47,34 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<BookingResponse>> GetBookingsByPredicateAsync(Expression<Func<Booking, bool>> predicate, int page, int pageSize)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            throw new ArgumentOutOfRangeException("Page and pageSize must be greater than 0.");
+        }
+
+        return await _dbContext.Bookings
+            .Where(predicate)
+            .OrderByDescending(r => r.BookingDate)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(e => new BookingResponse
+            {
+                Id = e.Id,
+                UserId = e.UserId,
+                BookingDate = e.BookingDate,
+                StartTime = e.StartTime,
+                EndTime = e.EndTime,
+                Status = e.Status,
+                GroundId = e.GroundId,
+                TotalAmount = e.TotalAmount,
+                CreatedAt = e.CreatedAt,
+                GroundName = e.Ground.Name
+            })
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<BookingResponse>> GetBookingsByUserIdAsync(string userId, int page, int pageSize)
     {
         if (page <= 0 || pageSize <= 0)
@@ -62,6 +90,7 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
             .Select(e => new BookingResponse
             {
                 Id = e.Id,
+                UserId = e.UserId,
                 BookingDate = e.BookingDate,
                 StartTime = e.StartTime,
                 EndTime = e.EndTime,

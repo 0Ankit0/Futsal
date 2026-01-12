@@ -37,6 +37,33 @@ public class BookingApiEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
+        routeGroup.MapGet("/pending", GetPendingBookingsByUserId)
+            .WithName("GetPendingBookingsByUserId")
+            .WithSummary("Get Pending Bookings of a user")
+            .WithDescription("Get all the Pending Bookings for a particular user using userid")
+            .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        routeGroup.MapGet("/cancelled",GetCancelledBookingsByUserId)
+            .WithName("GetCancelledBookingsByUserId")
+            .WithSummary("Get Cancelled Bookings of a user")
+            .WithDescription("Get all the Cancelled Bookings for a particular user using userid")
+            .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        routeGroup.MapGet("/completed",GetCompletedBookingsByUserId)
+            .WithName("GetCompletedBookingsByUserId")
+            .WithSummary("Get Completed Bookings of a user")
+            .WithDescription("Get all the Completed Bookings for a particular user using userid")
+            .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
         routeGroup.MapPost("/", CreateBooking)
             .WithName("CreateBooking")
             .WithSummary("Create a new booking")
@@ -88,12 +115,12 @@ public class BookingApiEndpoints : IEndpoint
             // Get current user
             var user = await userManager.GetUserAsync(claimsPrincipal);
             if (user == null)
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("User not found.");
 
             // Get booking
             var booking = await repository.GetByIdAsync(e => e.Id == id);
             if (booking == null)
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("Booking not found.");
 
             // Get ground
             var ground = await groundRepository.GetByIdAsync(e => e.Id == booking.GroundId);
@@ -102,7 +129,7 @@ public class BookingApiEndpoints : IEndpoint
 
             // Check owner
             if (ground.OwnerId != user.Id)
-                return TypedResults.Forbid();
+                return TypedResults.Forbid("Only the owner of the ground can accept bookings.");
 
             // Only allow accepting if pending
             if (booking.Status != BookingStatus.Pending)
@@ -117,6 +144,96 @@ public class BookingApiEndpoints : IEndpoint
         catch (Exception ex)
         {
             return TypedResults.Problem($"An error occurred while accepting the booking: {ex.Message}");
+        }
+    }
+
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetPendingBookingsByUserId(
+        [FromServices] IBookingRepository repository,
+        [FromServices] UserManager<User> userManager,
+        ClaimsPrincipal claimsPrincipal,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return TypedResults.Problem(detail: "Page and pageSize must be greater than 0.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.NotFound("User not found.");
+            }
+            var bookings = await repository.GetBookingsByPredicateAsync(
+                r => r.UserId == user.Id && r.Status == BookingStatus.Pending,
+                page,
+                pageSize);
+            return TypedResults.Ok(bookings);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.Problem($"An error occurred while retrieving Bookings: {ex.Message}");
+        }
+    }
+
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetCancelledBookingsByUserId(
+        [FromServices] IBookingRepository repository,
+        [FromServices] UserManager<User> userManager,
+        ClaimsPrincipal claimsPrincipal,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return TypedResults.Problem(detail: "Page and pageSize must be greater than 0.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.NotFound();
+            }
+            var bookings = await repository.GetBookingsByPredicateAsync(
+                r => r.UserId == user.Id && r.Status == BookingStatus.Cancelled,
+                page,
+                pageSize);
+            return TypedResults.Ok(bookings);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.Problem($"An error occurred while retrieving Bookings: {ex.Message}");
+        }
+    }
+
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetCompletedBookingsByUserId(
+        [FromServices] IBookingRepository repository,
+        [FromServices] UserManager<User> userManager,
+        ClaimsPrincipal claimsPrincipal,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return TypedResults.Problem(detail: "Page and pageSize must be greater than 0.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.NotFound("User not found.");
+            }
+            var bookings = await repository.GetBookingsByPredicateAsync(
+                r => r.UserId == user.Id && r.Status == BookingStatus.Completed,
+                page,
+                pageSize);
+            return TypedResults.Ok(bookings);
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.Problem($"An error occurred while retrieving Bookings: {ex.Message}");
         }
     }
 
@@ -211,7 +328,7 @@ public class BookingApiEndpoints : IEndpoint
             var existingBooking = await repository.GetByIdAsync(e => e.Id == id);
             if (existingBooking == null)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("Booking not found.");
             }
             if (existingBooking.Status == BookingStatus.Cancelled)
             {
@@ -244,13 +361,13 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("User not found.");
             }
 
             var booking = await repository.GetBookingByIdAndUserIdAsync(id, user.Id);
             if (booking == null)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("Booking not found.");
             }
 
             if (booking.Status == BookingStatus.Confirmed)
