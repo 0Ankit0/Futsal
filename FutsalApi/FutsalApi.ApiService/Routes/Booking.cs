@@ -33,7 +33,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Get Bookings of a user")
             .WithDescription("Get all the Bookings for a particular user using userid")
             .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -42,7 +42,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Get Pending Bookings of a user")
             .WithDescription("Get all the Pending Bookings for a particular user using userid")
             .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -51,7 +51,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Get Cancelled Bookings of a user")
             .WithDescription("Get all the Cancelled Bookings for a particular user using userid")
             .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -60,7 +60,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Get Completed Bookings of a user")
             .WithDescription("Get all the Completed Bookings for a particular user using userid")
             .Produces<IEnumerable<BookingResponse>>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -79,7 +79,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithDescription("Update an existing booking for a user")
             .Accepts<BookingRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -88,7 +88,7 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Cancel an existing booking")
             .WithDescription("Cancel an existing booking for a user")
             .Produces<string>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -97,13 +97,13 @@ public class BookingApiEndpoints : IEndpoint
             .WithSummary("Accept a booking request (owner only)")
             .WithDescription("Allows the owner of the ground to accept a booking request. Only the owner can perform this action.")
             .Produces<string>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
-    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound<string>, ForbidHttpResult>> AcceptBooking(
+    internal async Task<Results<Ok<string>, ProblemHttpResult>> AcceptBooking(
         [FromServices] IBookingRepository repository,
         [FromServices] IFutsalGroundRepository groundRepository,
         ClaimsPrincipal claimsPrincipal,
@@ -115,12 +115,12 @@ public class BookingApiEndpoints : IEndpoint
             // Get current user
             var user = await userManager.GetUserAsync(claimsPrincipal);
             if (user == null)
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
 
             // Get booking
             var booking = await repository.GetByIdAsync(e => e.Id == id);
             if (booking == null)
-                return TypedResults.NotFound("Booking not found.");
+                return TypedResults.Problem("Booking not found.", statusCode: StatusCodes.Status404NotFound);
 
             // Get ground
             var ground = await groundRepository.GetByIdAsync(e => e.Id == booking.GroundId);
@@ -147,7 +147,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetPendingBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult>> GetPendingBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -163,7 +163,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
             var bookings = await repository.GetBookingsByPredicateAsync(
                 r => r.UserId == user.Id && r.Status == BookingStatus.Pending,
@@ -177,7 +177,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetCancelledBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult>> GetCancelledBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -193,7 +193,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
             var bookings = await repository.GetBookingsByPredicateAsync(
                 r => r.UserId == user.Id && r.Status == BookingStatus.Cancelled,
@@ -207,7 +207,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetCompletedBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult>> GetCompletedBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -223,7 +223,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
             var bookings = await repository.GetBookingsByPredicateAsync(
                 r => r.UserId == user.Id && r.Status == BookingStatus.Completed,
@@ -237,7 +237,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult>> GetBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -253,7 +253,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
             var bookings = await repository.GetBookingsByUserIdAsync(user.Id, page, pageSize);
             return TypedResults.Ok(bookings);
@@ -318,7 +318,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound>> UpdateBooking(
+    internal async Task<Results<Ok<string>, ProblemHttpResult>> UpdateBooking(
         [FromServices] IBookingRepository repository,
         [FromRoute] int id,
         [FromBody] BookingRequest bookingRequest)
@@ -328,7 +328,7 @@ public class BookingApiEndpoints : IEndpoint
             var existingBooking = await repository.GetByIdAsync(e => e.Id == id);
             if (existingBooking == null)
             {
-                return TypedResults.NotFound("Booking not found.");
+                return TypedResults.Problem("Booking not found.", statusCode: StatusCodes.Status404NotFound);
             }
             if (existingBooking.Status == BookingStatus.Cancelled)
             {
@@ -351,7 +351,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound>> CancelBooking(
+    internal async Task<Results<Ok<string>, ProblemHttpResult>> CancelBooking(
         [FromServices] IBookingRepository repository,
         ClaimsPrincipal claimsPrincipal,
         [FromServices] UserManager<User> userManager,
@@ -361,13 +361,13 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound("User not found.");
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
 
             var booking = await repository.GetBookingByIdAndUserIdAsync(id, user.Id);
             if (booking == null)
             {
-                return TypedResults.NotFound("Booking not found.");
+                return TypedResults.Problem("Booking not found.", statusCode: StatusCodes.Status404NotFound);
             }
 
             if (booking.Status == BookingStatus.Confirmed)
