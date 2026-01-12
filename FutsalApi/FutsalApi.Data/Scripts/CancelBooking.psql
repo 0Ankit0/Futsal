@@ -5,7 +5,7 @@ DECLARE
 BEGIN
     -- Update the booking status to 'Cancelled'
     UPDATE "Bookings"
-    SET "Status" = 2 -- Assuming 2 represents 'Cancelled'
+    SET "Status" = 3 -- Assuming 2 represents 'Cancelled'
     WHERE "Id" = p_booking_id AND "UserId" = p_user_id;
 
     -- Get the number of updated rows

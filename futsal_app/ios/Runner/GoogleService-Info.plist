@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1030759456130-vp9vmg16p1cke8kni2etk6lm3u4aj1bt.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1030759456130-vp9vmg16p1cke8kni2etk6lm3u4aj1bt</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1030759456130-cbtu0lv8u0cd9m6u9dog5egepi6kn2jr.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAnM2LJogdciZvhfotL4znvQYpBnFNl0I8</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1030759456130</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.zenith.futsal.pay</string>
+	<key>PROJECT_ID</key>
+	<string>futsal-pay-6c54b</string>
+	<key>STORAGE_BUCKET</key>
+	<string>futsal-pay-6c54b.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1030759456130:ios:fecc6dac9622a1e1fd439b</string>
+</dict>
+</plist>

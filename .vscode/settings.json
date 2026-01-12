@@ -5,5 +5,6 @@
     "csharp.suppressDotnetRestoreNotification": true,
     "dotnet.server.useOmnisharp": false,
     "dotnetAcquisitionExtension.enableTelemetry": false,
-    "omnisharp.useModernNet": true
+    "omnisharp.useModernNet": true,
+    "java.configuration.updateBuildConfiguration": "automatic"
 }

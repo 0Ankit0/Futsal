@@ -1,0 +1,70 @@
+{
+  "project_info": {
+    "project_number": "1030759456130",
+    "project_id": "futsal-pay-6c54b",
+    "storage_bucket": "futsal-pay-6c54b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1030759456130:android:1171afa8c19b027cfd439b",
+        "android_client_info": {
+          "package_name": "com.zenith.futsal.pay"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1030759456130-8tvdrq19eap43q8qnkjcloru3d5h8oto.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zenith.futsal.pay",
+            "certificate_hash": "e2d558a7a402538ed7bd6819ddcfe42d50e9604a"
+          }
+        },
+        {
+          "client_id": "1030759456130-anmh5ccth1ijkufpgpenohs5anp5c0ho.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zenith.futsal.pay",
+            "certificate_hash": "49b2219604ccf0ee88501486cc2ce4f06e081694"
+          }
+        },
+        {
+          "client_id": "1030759456130-mf95gbsq9jcsn5tdtckm0u8rkqe5v0bv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zenith.futsal.pay",
+            "certificate_hash": "f4fb808473c1b1efdb5ccfa30a30192a2c0ebbdf"
+          }
+        },
+        {
+          "client_id": "1030759456130-vq41tnhfn5e6fq27hpdr9pms0rmm1g19.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBy5kI_cjoCxF7OgvaYIcGYaCXKln7hDr0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1030759456130-vq41tnhfn5e6fq27hpdr9pms0rmm1g19.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1030759456130-9l419633nkn5s4f0tbekq24rl6qnvu9p.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.futsalpay"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
