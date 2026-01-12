@@ -103,7 +103,7 @@ public class BookingApiEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
-    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound, ForbidHttpResult>> AcceptBooking(
+    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound<string>, ForbidHttpResult>> AcceptBooking(
         [FromServices] IBookingRepository repository,
         [FromServices] IFutsalGroundRepository groundRepository,
         ClaimsPrincipal claimsPrincipal,
@@ -129,7 +129,7 @@ public class BookingApiEndpoints : IEndpoint
 
             // Check owner
             if (ground.OwnerId != user.Id)
-                return TypedResults.Forbid("Only the owner of the ground can accept bookings.");
+                return TypedResults.Problem("Only the owner of the ground can accept bookings.", statusCode: StatusCodes.Status403Forbidden);
 
             // Only allow accepting if pending
             if (booking.Status != BookingStatus.Pending)
@@ -147,7 +147,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetPendingBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetPendingBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -177,7 +177,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetCancelledBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetCancelledBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -193,7 +193,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("User not found.");
             }
             var bookings = await repository.GetBookingsByPredicateAsync(
                 r => r.UserId == user.Id && r.Status == BookingStatus.Cancelled,
@@ -207,7 +207,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetCompletedBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetCompletedBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -237,7 +237,7 @@ public class BookingApiEndpoints : IEndpoint
         }
     }
 
-    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound>> GetBookingsByUserId(
+    internal async Task<Results<Ok<IEnumerable<BookingResponse>>, ProblemHttpResult, NotFound<string>>> GetBookingsByUserId(
         [FromServices] IBookingRepository repository,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
@@ -253,7 +253,7 @@ public class BookingApiEndpoints : IEndpoint
         {
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
-                return TypedResults.NotFound();
+                return TypedResults.NotFound("User not found.");
             }
             var bookings = await repository.GetBookingsByUserIdAsync(user.Id, page, pageSize);
             return TypedResults.Ok(bookings);
