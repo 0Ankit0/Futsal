@@ -38,7 +38,7 @@ public class BookingApiEndpointsTests
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
         var bookings = new List<BookingResponse>
         {
-            new BookingResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground 1" }
+            new BookingResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground 1", HasReview = false }
         };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);

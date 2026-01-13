@@ -40,9 +40,11 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                 StartTime = e.StartTime,
                 EndTime = e.EndTime,
                 Status = e.Status,
+                GroundId = e.GroundId,
                 TotalAmount = e.TotalAmount,
                 CreatedAt = e.CreatedAt,
-                GroundName = e.Ground.Name
+                GroundName = e.Ground.Name,
+                HasReview = _dbContext.Reviews.Any(r => r.GroundId == e.GroundId && r.UserId == e.UserId)
             })
             .ToListAsync();
     }
@@ -70,7 +72,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                 GroundId = e.GroundId,
                 TotalAmount = e.TotalAmount,
                 CreatedAt = e.CreatedAt,
-                GroundName = e.Ground.Name
+                GroundName = e.Ground.Name,
+                HasReview = _dbContext.Reviews.Any(r => r.GroundId == e.GroundId && r.UserId == e.UserId)
             })
             .ToListAsync();
     }
@@ -98,7 +101,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                 GroundId = e.GroundId,
                 TotalAmount = e.TotalAmount,
                 CreatedAt = e.CreatedAt,
-                GroundName = e.Ground.Name
+                GroundName = e.Ground.Name,
+                HasReview = _dbContext.Reviews.Any(r => r.GroundId == e.GroundId && r.UserId == e.UserId)
             })
             .ToListAsync();
     }
@@ -165,7 +169,8 @@ public class BookingRepository : GenericRepository<Booking>, IBookingRepository
                 Status = b.Status,
                 TotalAmount = b.TotalAmount,
                 CreatedAt = b.CreatedAt,
-                GroundName = b.Ground.Name
+                GroundName = b.Ground.Name,
+                HasReview = _dbContext.Reviews.Any(r => r.GroundId == b.GroundId && r.UserId == b.UserId)
             })
             .ToListAsync();
     }

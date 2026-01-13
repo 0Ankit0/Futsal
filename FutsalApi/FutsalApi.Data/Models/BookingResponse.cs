@@ -16,4 +16,5 @@ public class BookingResponse
     public decimal TotalAmount { get; set; }
     public DateTime CreatedAt { get; set; }
     public string GroundName { get; set; } = string.Empty;
+    public bool HasReview { get; set; }
 }
