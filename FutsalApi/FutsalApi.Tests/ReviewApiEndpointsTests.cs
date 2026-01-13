@@ -36,7 +36,7 @@ public class ReviewApiEndpointsTests
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var reviews = new List<ReviewResponse>
         {
-            new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" }
+            new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" }
         };
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetAllByUserAsync(user.Id, 1, 10)).ReturnsAsync(reviews);
@@ -77,7 +77,7 @@ public class ReviewApiEndpointsTests
         // Arrange
         var reviews = new List<ReviewResponse>
         {
-            new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" }
+            new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" }
         };
         _repositoryMock.Setup(r => r.GetReviewsByGroundIdAsync(1, 1, 10)).ReturnsAsync(reviews);
 
@@ -96,7 +96,7 @@ public class ReviewApiEndpointsTests
     public async Task GetReviewById_ReturnsOk_WhenFound()
     {
         // Arrange
-        var review = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
+        var review = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" };
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(review);
 
         // Act
@@ -184,7 +184,7 @@ public class ReviewApiEndpointsTests
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
         var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 5, Comment = "Great!" };
-        var existingReview = new ReviewResponse { Id = 2, UserId = "user1", GroundId = 1, Rating = 4, Comment = "Nice" };
+        var existingReview = new ReviewResponse { Id = 2, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 4, Comment = "Nice" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);
@@ -211,7 +211,7 @@ public class ReviewApiEndpointsTests
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
         var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 4, Comment = "Good!" };
-        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
+        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);
@@ -290,7 +290,7 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
-        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
+        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);
@@ -352,7 +352,7 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
-        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
+        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);

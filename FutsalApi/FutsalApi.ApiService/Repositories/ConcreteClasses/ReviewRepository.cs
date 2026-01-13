@@ -31,6 +31,7 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
 
         return await _dbContext.Reviews
             .Include(r => r.Image)
+            .Include(r => r.Ground)
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -40,6 +41,8 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
                 Id = r.Id,
                 UserId = r.UserId,
                 GroundId = r.GroundId,
+                GroundName = r.Ground.Name,
+                GroundImageUrl = r.Ground.ImageUrl,
                 Rating = r.Rating,
                 UserName = r.User.UserName ?? string.Empty,
                 UserImageId = r.User.ProfileImageId,
@@ -55,12 +58,15 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
     {
         var review = await _dbContext.Reviews
             .Include(r => r.Image)
+            .Include(r => r.Ground)
             .Where(predicate)
             .Select(r => new ReviewResponse
             {
                 Id = r.Id,
                 UserId = r.UserId,
                 GroundId = r.GroundId,
+                GroundName = r.Ground.Name,
+                GroundImageUrl = r.Ground.ImageUrl,
                 Rating = r.Rating,
                 UserName = r.User.UserName ?? string.Empty,
                 UserImageId = r.User.ProfileImageId,
@@ -83,6 +89,7 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
 
         return await _dbContext.Reviews
             .Include(r => r.Image)
+            .Include(r => r.Ground)
             .Where(r => r.GroundId == groundId)
             .OrderByDescending(r => r.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -92,6 +99,8 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
                 Id = r.Id,
                 UserId = r.UserId,
                 GroundId = r.GroundId,
+                GroundName = r.Ground.Name,
+                GroundImageUrl = r.Ground.ImageUrl,
                 Rating = r.Rating,
                 UserName = r.User.UserName ?? string.Empty,
                 UserImageId = r.User.ProfileImageId,

@@ -91,6 +91,7 @@ public class FutsalGroundRepository : GenericRepository<FutsalGround>, IFutsalGr
             // Get the latest 10 reviews for this ground
             ground.Reviews = await _dbContext.Reviews
                 .Include(r => r.Image)
+                .Include(r => r.Ground)
                 .Where(r => r.GroundId == ground.Id)
                 .OrderByDescending(r => r.CreatedAt)
                 .Take(10)
@@ -100,6 +101,8 @@ public class FutsalGroundRepository : GenericRepository<FutsalGround>, IFutsalGr
                     UserId = r.UserId,
                     UserName = r.User.UserName ?? string.Empty,
                     GroundId = r.GroundId,
+                    GroundName = r.Ground.Name,
+                    GroundImageUrl = r.Ground.ImageUrl,
                     Rating = r.Rating,
                     Comment = r.Comment,
                     CreatedAt = r.CreatedAt,
