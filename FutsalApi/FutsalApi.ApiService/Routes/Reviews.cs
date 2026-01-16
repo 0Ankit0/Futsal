@@ -61,7 +61,7 @@ public class ReviewApiEndpoints : IEndpoint
             .WithName("CreateReview")
             .WithSummary("Creates a new review.")
             .WithDescription("Adds a new review to the system.")
-            .Accepts<ReviewRequest>("application/json")
+            .Accepts<CreateReviewRequest>("application/json")
             .Produces<string>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -206,7 +206,7 @@ public class ReviewApiEndpoints : IEndpoint
         [FromServices] AppDbContext dbContext,
         [FromServices] UserManager<User> userManager,
         ClaimsPrincipal claimsPrincipal,
-        [FromBody] ReviewRequest reviewRequest)
+        [FromBody] CreateReviewRequest reviewRequest)
     {
         try
         {
@@ -215,13 +215,22 @@ public class ReviewApiEndpoints : IEndpoint
                 return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
             }
 
-            var hasValidBooking = await bookingRepository.HasValidBookingForReviewAsync(reviewRequest.GroundId, user.Id);
+            // Get the booking by bookingId and ensure it belongs to the user
+            var booking = await bookingRepository.GetByIdAsync(e => e.Id == reviewRequest.BookingId && e.UserId == user.Id);
+            if (booking == null)
+            {
+                return TypedResults.Problem("Booking not found or does not belong to the user.", statusCode: StatusCodes.Status404NotFound);
+            }
+
+            var groundId = booking.GroundId;
+
+            var hasValidBooking = await bookingRepository.HasValidBookingForReviewAsync(groundId, user.Id);
             if (!hasValidBooking)
             {
                 return TypedResults.Problem("You can only review grounds for which you have a completed or cancelled booking.", statusCode: StatusCodes.Status400BadRequest);
             }
 
-            var existingReview = await repository.GetByIdAsync(e => e.GroundId == reviewRequest.GroundId && e.UserId == user.Id);
+            var existingReview = await repository.GetByIdAsync(e => e.GroundId == groundId && e.UserId == user.Id);
             if (existingReview is not null)
             {
                 return TypedResults.Problem("You have already reviewed this ground.", statusCode: StatusCodes.Status400BadRequest);
@@ -230,7 +239,7 @@ public class ReviewApiEndpoints : IEndpoint
             Review review = new Review
             {
                 UserId = user.Id,
-                GroundId = reviewRequest.GroundId,
+                GroundId = groundId,
                 Rating = reviewRequest.Rating,
                 Comment = reviewRequest.Comment,
                 ImageId = reviewRequest.ImageId

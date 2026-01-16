@@ -18,12 +18,16 @@ public class ReviewApiEndpointsTests
     private readonly Mock<IReviewRepository> _repositoryMock;
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<IFutsalGroundRepository> _groundRepositoryMock;
+    private readonly Mock<IBookingRepository> _bookingRepositoryMock;
+    private readonly Mock<AppDbContext> _dbContextMock;
     private readonly ReviewApiEndpoints _endpoints;
 
     public ReviewApiEndpointsTests()
     {
         _repositoryMock = new Mock<IReviewRepository>();
         _groundRepositoryMock = new Mock<IFutsalGroundRepository>();
+        _bookingRepositoryMock = new Mock<IBookingRepository>();
+        _dbContextMock = new Mock<AppDbContext>();
         _userManagerMock = MockUserManager();
         _endpoints = new ReviewApiEndpoints();
     }
@@ -133,24 +137,30 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
-        var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 5, Comment = "Great!" };
+        var booking = new Booking { Id = 1, UserId = "user1", GroundId = 1 };
+        var reviewRequest = new CreateReviewRequest { BookingId = 1, Rating = 5, Comment = "Great!" };
         var review = new Review { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
-        _repositoryMock.Setup(r => r.CreateAsync(It.IsAny<Review>())).ReturnsAsync(review);
+        _bookingRepositoryMock.Setup(br => br.GetByIdAsync(It.IsAny<Expression<Func<Booking, bool>>>())).ReturnsAsync(booking);
+        _bookingRepositoryMock.Setup(br => br.HasValidBookingForReviewAsync(1, "user1")).ReturnsAsync(true);
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync((Review?)null);
+        _repositoryMock.Setup(r => r.CreateReviewAsync(It.IsAny<Review>())).ReturnsAsync(1);
+
         // Act
         var result = await _endpoints.CreateReview(
             _repositoryMock.Object,
+            _bookingRepositoryMock.Object,
+            _dbContextMock.Object,
             _userManagerMock.Object,
             claimsPrincipal,
             reviewRequest);
 
         // Assert
-        // The expected result type is Results<Ok<int>, ProblemHttpResult>
-        result.Should().BeOfType<Results<Ok<int>, ProblemHttpResult>>();
-        if (result is Results<Ok<int>, ProblemHttpResult> { Result: Ok<int> okResult })
+        result.Should().BeOfType<Results<Ok<string>, ProblemHttpResult>>();
+        if (result is Results<Ok<string>, ProblemHttpResult> { Result: Ok<string> okResult })
         {
-            okResult.Value.GetType().Should().Be(typeof(int));
+            okResult.Value.Should().Be("Review created successfully.");
         }
     }
 
@@ -160,18 +170,20 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal();
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync((User?)null);
-        var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 5, Comment = "Great!" };
+        var reviewRequest = new CreateReviewRequest { BookingId = 1, Rating = 5, Comment = "Great!" };
 
         // Act
         var result = await _endpoints.CreateReview(
             _repositoryMock.Object,
+            _bookingRepositoryMock.Object,
+            _dbContextMock.Object,
             _userManagerMock.Object,
             claimsPrincipal,
             reviewRequest);
 
         // Assert
-        result.Should().BeOfType<Results<Ok<int>, ProblemHttpResult>>();
-        if (result is Results<Ok<int>, ProblemHttpResult> { Result: ProblemHttpResult problemResult })
+        result.Should().BeOfType<Results<Ok<string>, ProblemHttpResult>>();
+        if (result is Results<Ok<string>, ProblemHttpResult> { Result: ProblemHttpResult problemResult })
         {
             problemResult.ProblemDetails.Detail.Should().Be("User not found.");
         }
@@ -183,22 +195,27 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
-        var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 5, Comment = "Great!" };
-        var existingReview = new ReviewResponse { Id = 2, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 4, Comment = "Nice" };
+        var booking = new Booking { Id = 1, UserId = "user1", GroundId = 1 };
+        var reviewRequest = new CreateReviewRequest { BookingId = 1, Rating = 5, Comment = "Great!" };
+        var existingReview = new Review { Id = 2, UserId = "user1", GroundId = 1, Rating = 4, Comment = "Nice" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+        _bookingRepositoryMock.Setup(br => br.GetByIdAsync(It.IsAny<Expression<Func<Booking, bool>>>())).ReturnsAsync(booking);
+        _bookingRepositoryMock.Setup(br => br.HasValidBookingForReviewAsync(1, "user1")).ReturnsAsync(true);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);
 
         // Act
         var result = await _endpoints.CreateReview(
             _repositoryMock.Object,
+            _bookingRepositoryMock.Object,
+            _dbContextMock.Object,
             _userManagerMock.Object,
             claimsPrincipal,
             reviewRequest);
 
         // Assert
-        result.Should().BeOfType<Results<Ok<int>, ProblemHttpResult>>();
-        if (result is Results<Ok<int>, ProblemHttpResult> { Result: ProblemHttpResult problemResult })
+        result.Should().BeOfType<Results<Ok<string>, ProblemHttpResult>>();
+        if (result is Results<Ok<string>, ProblemHttpResult> { Result: ProblemHttpResult problemResult })
         {
             problemResult.ProblemDetails.Detail.Should().Be("You have already reviewed this ground.");
         }
@@ -210,12 +227,12 @@ public class ReviewApiEndpointsTests
         // Arrange
         var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, "user1") }));
         var user = new User { Id = "user1" };
+        var booking = new Booking { Id = 1, UserId = "user1", GroundId = 1 };
         var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 4, Comment = "Good!" };
-        var existingReview = new ReviewResponse { Id = 1, UserId = "user1", GroundId = 1, GroundName = "Ground1", GroundImageUrl = "url1", Rating = 5, Comment = "Great!" };
+        var existingReview = new Review { Id = 1, UserId = "user1", GroundId = 1, Rating = 5, Comment = "Great!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync(existingReview);
-        _repositoryMock.Setup(r => r.UpdateAsync(It.IsAny<Expression<Func<Review, bool>>>(), It.IsAny<Review>())).ReturnsAsync(new Review());
 
         // Act
         var result = await _endpoints.UpdateReview(
@@ -266,7 +283,7 @@ public class ReviewApiEndpointsTests
         var reviewRequest = new ReviewRequest { GroundId = 1, Rating = 4, Comment = "Good!" };
 
         _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
-        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync((ReviewResponse?)null);
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<Review, bool>>>())).ReturnsAsync((Review?)null);
 
         // Act
         var result = await _endpoints.UpdateReview(
