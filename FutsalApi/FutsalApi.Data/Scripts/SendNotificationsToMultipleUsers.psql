@@ -1,8 +1,0 @@
-﻿CREATE OR REPLACE PROCEDURE send_notifications_to_multiple_users(p_user_ids TEXT[], p_message TEXT)
-AS $$
-BEGIN
-    INSERT INTO "Notifications" ("UserId", "Message", "IsRead", "CreatedAt")
-    SELECT user_id, p_message, FALSE, NOW()
-    FROM unnest(p_user_ids) AS user_id;
-END;
-$$ LANGUAGE plpgsql;
