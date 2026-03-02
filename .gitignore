@@ -16,6 +16,9 @@ key.properties
 # Mono auto generated files
 mono_crash.*
 
+# test db
+*.db
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
