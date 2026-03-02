@@ -1,83 +1,82 @@
 # Pages Overview
 
-This document provides an overview of the different pages available in the Futsal Booking System, categorized by user roles (Admin and User).
+This document describes all frontend pages organised by user role / route group.
 
-## Admin Pages
+## Public Pages (`(public)/`)
 
-These pages are designed for administrators to manage various aspects of the system, including futsal grounds, bookings, users, and roles.
+Accessible without authentication.
 
-*   **Admin Dashboard (`/admin/dashboard`)**
-    *   **Purpose:** Provides a high-level overview of key system metrics and quick access to administrative functions.
-    *   **Functionality:** Displays statistics (e.g., total users, total futsal grounds, total bookings) and navigation links to other admin sections.
+| Page | Route | Description |
+|------|-------|-------------|
+| Landing | `/` | Hero section, platform stats, key features, how-it-works, CTA |
+| Browse Grounds | `/grounds` | Filterable list of all verified grounds (search, ground type, price, location) |
+| Ground Detail | `/grounds/[slug]` | Full ground info: images gallery, slot availability calendar, reviews, book button |
+| Booking Form | `/grounds/[slug]/book` | Date + time slot picker, payment method selection, loyalty redemption option |
+| Booking Confirmation | `/booking/[id]/confirmation` | Booking summary, QR code, add-to-calendar link |
 
-*   **Futsal Grounds List (`/admin/futsal-grounds`)**
-    *   **Purpose:** Allows administrators to view, edit, and delete futsal ground listings.
-    *   **Functionality:** Displays a paginated list of all registered futsal grounds with options to manage each entry.
+---
 
-*   **Futsal Ground Form (No direct route, used for creation/editing)**
-    *   **Purpose:** Used for creating new futsal ground entries or modifying existing ones.
-    *   **Functionality:** Provides a form with fields for futsal ground details such as name, location, price per hour, opening/closing times, and description.
+## Auth Pages (`(auth)/`)
 
-*   **Bookings List (`/admin/bookings`)**
-    *   **Purpose:** Enables administrators to view all bookings made in the system.
-    *   **Functionality:** Displays a comprehensive list of all bookings, including booking ID, user, futsal ground, date, time, and status.
+| Page | Route | Description |
+|------|-------|-------------|
+| Login | `/login` | Email + password login; social OAuth buttons (Google, GitHub, Facebook) |
+| Sign Up | `/signup` | Registration form with email verification |
+| Verify Email | `/verify-email` | Email confirmation link landing page |
+| Password Reset | `/forgot-password` | Request reset email |
+| Password Reset Confirm | `/reset-password` | Enter new password via reset link |
+| IP Verify | `/ip-verify` | Verify login from a new IP address |
+| OTP | `/otp` | TOTP code entry during 2FA login |
 
-*   **Users List (`/admin/users`)**
-    *   **Purpose:** Allows administrators to view all registered users.
-    *   **Functionality:** Displays a list of users with their ID, email, and email confirmation status.
+---
 
-*   **Roles List (`/admin/roles`)**
-    *   **Purpose:** Enables administrators to manage user roles within the system.
-    *   **Functionality:** Displays a list of all defined roles with options to edit or delete them.
+## Player Dashboard (`(user-dashboard)/`)
 
-*   **Role Form (No direct route, used for creation/editing)**
-    *   **Purpose:** Used for creating new roles or modifying existing ones.
-    *   **Functionality:** Provides a form to define or update role names.
+Requires authentication. Any logged-in user.
 
-*   **Role Claims (`/admin/roles/{RoleId}/claims`)**
-    *   **Purpose:** Allows administrators to manage claims (permissions) associated with specific roles.
-    *   **Functionality:** Displays existing claims for a role and provides functionality to add or remove claims.
+| Page | Route | Description |
+|------|-------|-------------|
+| Dashboard | `/dashboard` | Upcoming bookings, quick stats, recent activity |
+| My Bookings | `/my-bookings` | Full booking history with status badges; cancel upcoming bookings |
+| Favourites | `/favourites` | Saved grounds with quick-book shortcut |
+| Loyalty | `/loyalty` | Points balance, tier progress, transaction history, redemption form |
+| Notifications | `/notifications` | In-app notification centre; mark read, bulk clear |
+| Settings | `/settings` | Profile info, password change, 2FA setup, notification preferences |
 
-## User Pages
+---
 
-These pages are designed for general users to browse futsal grounds, make bookings, and manage their personal information.
+## Ground Owner Dashboard (`(owner-dashboard)/owner/`)
 
-*   **Futsal Grounds List (`/futsal-grounds`)**
-    *   **Purpose:** Allows users to browse available futsal grounds.
-    *   **Functionality:** Displays a list of futsal grounds with basic information and an option to view detailed information for each.
+Requires authentication + active subscription. Shows `SubscriptionGate` paywall if subscription is expired.
 
-*   **Futsal Ground Details (`/futsal-grounds/{Id:int}`)**
-    *   **Purpose:** Provides detailed information about a specific futsal ground.
-    *   **Functionality:** Shows name, location, price, description, operating hours, and includes a "Book Now" button. Also displays reviews for the ground.
+| Page | Route | Description |
+|------|-------|-------------|
+| Dashboard | `/owner/dashboard` | KPIs: today's bookings, daily revenue, pending payout, active grounds |
+| My Grounds | `/owner/grounds` | List of owner's grounds with status badges (verified/unverified) |
+| Bookings | `/owner/bookings` | All bookings across owner's grounds; check-in button; filter by ground/date/status |
+| Payouts | `/owner/payouts` | Payout history, ledger balance, payment gateway configuration form |
+| Analytics | `/owner/analytics` | Revenue trends, booking heatmap, popular time slots, review scores |
+| Reviews | `/owner/reviews` | All reviews across grounds; reply to review |
+| Subscription | `/owner/subscription` | Current plan, expiry date, upgrade/renew, trial start |
+| Team | `/owner/team` | Invite managers & staff by email; list active staff with roles; remove access |
 
-*   **My Bookings (`/my-bookings`)**
-    *   **Purpose:** Allows users to view and manage their personal bookings.
-    *   **Functionality:** Displays a list of the user's past and upcoming bookings with options to cancel upcoming bookings.
+---
 
-*   **Booking Form (`/bookings/new/{GroundId:int}`)**
-    *   **Purpose:** Enables users to create a new booking for a selected futsal ground.
-    *   **Functionality:** Provides a form to select booking date, start time, and end time.
+## Superuser (Admin) Dashboard (`(admin-dashboard)/admin/`)
 
-*   **Reviews List (Integrated into Futsal Ground Details)**
-    *   **Purpose:** Displays reviews submitted for a specific futsal ground.
-    *   **Functionality:** Shows user, rating, and comments for each review.
+Requires `is_superuser = true`.
 
-*   **Review Form (No direct route, used for creation/editing)**
-    *   **Purpose:** Allows users to submit or update a review for a futsal ground.
-    *   **Functionality:** Provides a form to enter a rating and comment.
+| Page | Route | Description |
+|------|-------|-------------|
+| Dashboard | `/admin/dashboard` | Platform KPIs: total users, grounds, bookings today, MRR, payout volume |
+| Users | `/admin/users` | Full user list; edit roles; deactivate/delete accounts |
+| Grounds | `/admin/grounds` | All grounds across all owners; verify/unverify; view owner details |
+| Payouts | `/admin/payouts` | All payout records; switch payout mode (PLATFORM/DIRECT); view platform balance; retry/hold records |
+| Subscriptions | `/admin/subscriptions` | All owner subscriptions; manually activate; view trial/grace states |
+| RBAC | `/admin/rbac` | Role creation; permission assignment; per-role permission matrix |
+| Tenants | `/admin/tenants` | Tenant organisations list; view members |
+| Finance | `/admin/finances` | Transaction ledger across all payment providers |
+| IP Access | `/admin/ip-access` | IP allowlist management |
+| Tokens | `/admin/tokens` | Active session token list; revoke sessions |
+| Notifications | `/admin/notifications` | Send broadcast notifications to users |
 
-*   **User Profile (`/profile`)**
-    *   **Purpose:** Enables users to view and update their profile information.
-    *   **Functionality:** Provides fields to update email and password.
-
-*   **Login (`/login`)**
-    *   **Purpose:** Allows users to authenticate and access the system.
-    *   **Functionality:** Provides a form for email and password login.
-
-*   **Register (`/register`)**
-    *   **Purpose:** Allows new users to create an account.
-    *   **Functionality:** Provides a form for new user registration with email and password.
-
-*   **Forgot Password (`/forgot-password`)**
-    *   **Purpose:** Enables users to reset their password if forgotten.
-    *   **Functionality:** Provides a form to request a password reset link via email.
