@@ -1,37 +1,38 @@
-import 'package:ui/core/service/api_service.dart';
 import 'package:ui/core/service/api_const.dart';
+import 'package:ui/core/service/api_service.dart';
 import 'package:ui/view/home/data/model/futsal_model.dart';
 
 class FavoriteRepository {
   final ApiService _apiService = ApiService();
 
-  // Get all favorite futsals
+  /// GET /api/v1/futsal/favourites
   Future<List<FutsalModel>> getFavoriteFutsals() async {
     try {
-      final response = await _apiService.get(ApiConst.getFavoritesFutsal);
-
+      final response = await _apiService.get(ApiConst.favourites);
       final List<dynamic> data = response.data as List<dynamic>;
-      return data.map((json) => FutsalModel.fromJson(json)).toList();
+      return data
+          .map((j) => FutsalModel.fromJson(j as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      throw ApiException('Failed to load favorite futsals: ${e.toString()}');
+      throw ApiException('Failed to load favourites: $e');
     }
   }
 
-  // Add futsal to favorites (if you have this endpoint)
-  Future<void> addToFavorites(int futsalId) async {
+  /// POST /api/v1/futsal/favourites/{groundId}
+  Future<void> addToFavorites(int groundId) async {
     try {
-      await _apiService.post('${ApiConst.manageFavoriteFutsal}/$futsalId');
+      await _apiService.post(ApiConst.addFavourite(groundId));
     } catch (e) {
-      throw ApiException('Failed to add to favorites: ${e.toString()}');
+      throw ApiException('Failed to add to favourites: $e');
     }
   }
 
-  // Remove futsal from favorites (if you have this endpoint)
-  Future<void> removeFromFavorites(int futsalId) async {
+  /// DELETE /api/v1/futsal/favourites/{groundId}
+  Future<void> removeFromFavorites(int groundId) async {
     try {
-      await _apiService.delete('${ApiConst.manageFavoriteFutsal}/$futsalId');
+      await _apiService.delete(ApiConst.removeFavourite(groundId));
     } catch (e) {
-      throw ApiException('Failed to remove from favorites: ${e.toString()}');
+      throw ApiException('Failed to remove from favourites: $e');
     }
   }
 }

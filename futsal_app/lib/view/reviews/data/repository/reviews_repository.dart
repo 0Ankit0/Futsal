@@ -7,35 +7,43 @@ class ReviewsRepository {
   final ApiService _apiService;
 
   ReviewsRepository({ApiService? apiService})
-    : _apiService = apiService ?? ApiService();
+      : _apiService = apiService ?? ApiService();
 
-  Future<List<ReviewsModel>> fetchReviews() async {
+  /// GET /api/v1/futsal/grounds/{groundId}/reviews
+  Future<List<ReviewsModel>> fetchGroundReviews(int groundId) async {
     try {
-      final response = await _apiService.get(ApiConst.reviews);
+      final response = await _apiService.get(ApiConst.groundReviews(groundId));
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data.map((json) => ReviewsModel.fromJson(json)).toList();
-      } else {
-        throw Exception('Failed to load reviews');
+        final List<dynamic> data = response.data as List;
+        return data
+            .map((j) => ReviewsModel.fromJson(j as Map<String, dynamic>))
+            .toList();
       }
+      return [];
     } catch (e) {
       throw Exception('Failed to load reviews: $e');
     }
   }
 
-  Future<int> createReview(ReviewRequest reviewRequest) async {
+  /// POST /api/v1/futsal/grounds/{groundId}/reviews
+  Future<ReviewsModel> createReview(int groundId, ReviewRequest reviewRequest) async {
     try {
       final response = await _apiService.post(
-        ApiConst.reviews,
+        ApiConst.createReview(groundId),
         data: reviewRequest.toJson(),
       );
-      if (response.statusCode == 200) {
-        return response.data as int;
-      } else {
-        throw Exception('Failed to create review');
-      }
+      return ReviewsModel.fromJson(response.data as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Failed to create review: $e');
+    }
+  }
+
+  /// DELETE /api/v1/futsal/reviews/{reviewId}
+  Future<void> deleteReview(int reviewId) async {
+    try {
+      await _apiService.delete(ApiConst.reviewDetail(reviewId));
+    } catch (e) {
+      throw Exception('Failed to delete review: $e');
     }
   }
 }
