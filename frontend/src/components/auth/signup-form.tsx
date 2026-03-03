@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useSocialProviders } from '@/hooks/use-social-providers';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { startOAuthLogin } from '@/lib/oauth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export function SignupForm() {
   const router = useRouter();
   const { signupAsync, isLoading, signupError } = useAuth();
   const { isGoogle, isGithub, isFacebook, hasAny } = useSocialProviders();
+  const { track, setUserProperty } = useAnalytics();
 
   const {
     register,
@@ -56,6 +58,8 @@ export function SignupForm() {
   const onSubmit = async (data: SignupFormData) => {
     try {
       await signupAsync(data);
+      track('user_signed_up', { method: 'email' });
+      setUserProperty({ username: data.username, email: data.email });
       router.push('/dashboard');
     } catch {
       // error shown via signupError

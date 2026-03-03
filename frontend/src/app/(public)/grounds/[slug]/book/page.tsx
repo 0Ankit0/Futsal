@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
   const searchParams = useSearchParams();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const _hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const { track } = useAnalytics();
 
   const groundId = searchParams.get('ground_id');
   const slotStart = searchParams.get('slot_start') ?? '';
@@ -70,11 +72,15 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
         ...(useLoyalty && { loyalty_points_to_redeem: 1 }),
       });
 
+      track('booking_initiated', { ground_id: ground.id, ground_name: ground.name, date, slot_start: slotStart, slot_end: slotEnd, payment_method: paymentMethod });
+
       const { data: payment } = await apiClient.post('/payments/initiate', {
         booking_id: booking.id,
         payment_method: paymentMethod,
         return_url: `${window.location.origin}/booking/${booking.id}/confirmation`,
       });
+
+      track('payment_initiated', { amount: booking.total_amount ?? 0, provider: paymentMethod, context: 'booking' });
 
       if (payment?.payment_url) {
         window.location.href = payment.payment_url;

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Star, Clock, CheckCircle, AlertCircle, Lock } from 'lucide-react';
@@ -32,6 +33,7 @@ function GroundDetailClient({ slug }: { slug: string }) {
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const { track } = useAnalytics();
 
   const { data: ground, isLoading: groundLoading } = useQuery({
     queryKey: ['ground-slug', slug],
@@ -41,6 +43,13 @@ function GroundDetailClient({ slug }: { slug: string }) {
     },
     enabled: !!slug,
   });
+
+  useEffect(() => {
+    if (ground) {
+      track('ground_viewed', { ground_id: ground.id, ground_name: ground.name, ground_type: ground.ground_type });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ground?.id]);
 
   const { data: slots, isLoading: slotsLoading } = useQuery({
     queryKey: ['slots', ground?.id, selectedDate],

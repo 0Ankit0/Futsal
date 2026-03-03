@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, Tenant } from '@/types';
+import { posthog } from '@/lib/posthog';
 
 interface AuthState {
   user: User | null;
@@ -16,7 +17,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       tenant: null,
       isAuthenticated: false,
@@ -32,9 +33,14 @@ export const useAuthStore = create<AuthState>()(
         set({ tenant });
       },
       logout: () => {
+        const { user } = get();
         if (typeof window !== 'undefined') {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
+          if (user && posthog.__loaded) {
+            posthog.capture('user_signed_out', {});
+            posthog.reset(); // Clear person from PostHog session
+          }
         }
         set({ user: null, tenant: null, isAuthenticated: false });
       },

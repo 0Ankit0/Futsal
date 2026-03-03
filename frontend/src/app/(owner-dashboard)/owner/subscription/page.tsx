@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   useSubscription,
   useSubscriptionPlans,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { CheckCircle, Clock, XCircle, AlertTriangle, CreditCard, Zap } from 'lucide-react';
+import { useAnalytics } from '@/hooks/use-analytics';
 
 // ── Status badge ───────────────────────────────────────────────────────────
 
@@ -192,6 +193,12 @@ export default function OwnerSubscriptionPage() {
   const { data: subscription, isLoading: subLoading } = useSubscription();
   const { data: plans = [], isLoading: plansLoading } = useSubscriptionPlans();
   const cancelSubscription = useCancelSubscription();
+  const { track } = useAnalytics();
+
+  useEffect(() => {
+    track('subscription_page_viewed', {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useVerifyPayment } from '@/hooks/use-finances';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { PaymentProvider } from '@/types';
@@ -21,6 +22,7 @@ function PaymentCallbackInner() {
   const [message, setMessage] = useState('');
 
   const verifyPayment = useVerifyPayment();
+  const { track } = useAnalytics();
 
   useEffect(() => {
     const provider = (searchParams.get('provider') || 'khalti') as PaymentProvider;
@@ -40,6 +42,7 @@ function PaymentCallbackInner() {
           if (result.status === 'completed') {
             setStatus('success');
             setMessage(`Payment of ${result.amount ? result.amount / 100 : ''} completed successfully.`);
+            track('payment_success', { amount: result.amount ?? 0, provider, context: 'booking', transaction_id: String(result.transaction_id) });
             setTimeout(() => router.push('/finances'), 4000);
           } else {
             setStatus('error');
@@ -49,6 +52,7 @@ function PaymentCallbackInner() {
         onError: () => {
           setStatus('error');
           setMessage('Payment verification failed. Please check your transactions or contact support.');
+          track('payment_failed', { amount: 0, provider, error: 'verification_failed' });
         },
       }
     );

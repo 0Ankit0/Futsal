@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useSocialProviders } from '@/hooks/use-social-providers';
+import { useAnalytics } from '@/hooks/use-analytics';
 import { startOAuthLogin } from '@/lib/oauth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ export function LoginForm() {
   const router = useRouter();
   const { loginAsync, isLoading, loginError } = useAuth();
   const { isGoogle, isGithub, isFacebook, hasAny } = useSocialProviders();
+  const { track } = useAnalytics();
 
   const {
     register,
@@ -47,6 +49,7 @@ export function LoginForm() {
         const otpResult = result as OTPLoginResponse;
         router.push(`/otp-verify?temp_token=${otpResult.temp_token}`);
       } else {
+        track('user_signed_in', { method: 'email' });
         router.push('/dashboard');
       }
     } catch {
@@ -168,6 +171,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const { loginAsync, isLoading, loginError } = useAuth();
+  const { track } = useAnalytics();
 
   const {
     register,
@@ -184,6 +188,7 @@ export function LoginForm() {
         const otpResult = result as OTPLoginResponse;
         router.push(`/otp-verify?temp_token=${otpResult.temp_token}`);
       } else {
+        track('user_signed_in', { method: 'email' });
         router.push('/dashboard');
       }
     } catch {

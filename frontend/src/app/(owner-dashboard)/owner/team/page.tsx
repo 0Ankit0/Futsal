@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { UserPlus, Users, Trash2, Mail } from 'lucide-react';
+import { useAnalytics } from '@/hooks/use-analytics';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -109,6 +110,7 @@ function InviteDialog({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<StaffRole>('STAFF');
   const invite = useInviteStaff(groundId);
+  const { track } = useAnalytics();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +119,7 @@ function InviteDialog({
       { email: email.trim(), role },
       {
         onSuccess: () => {
+          track('staff_invited', { ground_id: groundId, role });
           onSuccess();
           onClose();
         },
