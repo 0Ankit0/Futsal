@@ -1,61 +1,57 @@
 import 'package:equatable/equatable.dart';
+import 'package:ui/core/service/api_const.dart';
 
+/// Matches FastAPI `UserResponse` schema from `GET /api/v1/users/me`
 class UserInfoModel extends Equatable {
-  final String id;
+  final String id; // Encoded hashid (string) or int stringified
   final String email;
-  final bool isEmailConfirmed;
-  final String? profileImageUrl;
-  final String firstName;
-  final String lastName;
   final String username;
-  final String? phoneNumber;
-  final bool isPhoneNumberConfirmed;
-  final String totalBookings;
-  final String totalFavorites;
-  final String totalReviews;
+  final String? firstName;
+  final String? lastName;
+  final String? phone;
+  final bool isActive;
+  final bool isSuperuser;
+  final String? avatarUrl;
 
   const UserInfoModel({
     required this.id,
     required this.email,
-    required this.isEmailConfirmed,
-    this.profileImageUrl,
-    required this.firstName,
-    required this.lastName,
     required this.username,
-    this.phoneNumber,
-    required this.isPhoneNumberConfirmed,
-    required this.totalBookings,
-    required this.totalFavorites,
-    required this.totalReviews,
+    this.firstName,
+    this.lastName,
+    this.phone,
+    required this.isActive,
+    required this.isSuperuser,
+    this.avatarUrl,
   });
 
-  // Get full image URL with base URL prepended
-  String? get fullImageUrl {
-    if (profileImageUrl == null || profileImageUrl!.isEmpty) {
-      return null;
-    }
-    // If it's already a full URL, return as is
-    if (profileImageUrl!.startsWith('http')) {
-      return profileImageUrl;
-    }
-    // Otherwise prepend base URL
-    return 'http://144.126.252.228:8080$profileImageUrl';
+  String get fullName {
+    final parts = [firstName, lastName].where((p) => p != null && p.isNotEmpty);
+    return parts.isEmpty ? username : parts.join(' ');
   }
+
+  String? get fullAvatarUrl {
+    if (avatarUrl == null || avatarUrl!.isEmpty) return null;
+    if (avatarUrl!.startsWith('http')) return avatarUrl;
+    return '${ApiConst.baseUrl}$avatarUrl';
+  }
+
+  /// Placeholder counts — populate from dedicated API calls if needed.
+  int get totalBookings => 0;
+  int get totalFavorites => 0;
+  int get totalReviews => 0;
 
   factory UserInfoModel.fromJson(Map<String, dynamic> json) {
     return UserInfoModel(
-      id: json['id'] as String,
-      email: json['email'] as String,
-      isEmailConfirmed: json['isEmailConfirmed'] as bool,
-      profileImageUrl: json['profileImageUrl'] as String?,
-      firstName: json['firstName'] as String,
-      lastName: json['lastName'] as String,
-      username: json['username'] as String,
-      phoneNumber: json['phoneNumber'] as String?,
-      isPhoneNumberConfirmed: json['isPhoneNumberConfirmed'] as bool,
-      totalBookings: json['totalBookings']?.toString() ?? '0',
-      totalFavorites: json['totalFavorites']?.toString() ?? '0',
-      totalReviews: json['totalReviews']?.toString() ?? '0',
+      id: json['id']?.toString() ?? '',
+      email: json['email'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
+      phone: json['phone'] as String?,
+      isActive: json['is_active'] as bool? ?? true,
+      isSuperuser: json['is_superuser'] as bool? ?? false,
+      avatarUrl: json['avatar_url'] as String?,
     );
   }
 
@@ -63,32 +59,18 @@ class UserInfoModel extends Equatable {
     return {
       'id': id,
       'email': email,
-      'isEmailConfirmed': isEmailConfirmed,
-      'profileImageUrl': profileImageUrl,
-      'firstName': firstName,
-      'lastName': lastName,
       'username': username,
-      'phoneNumber': phoneNumber,
-      'isPhoneNumberConfirmed': isPhoneNumberConfirmed,
-      'totalBookings': totalBookings,
-      'totalFavorites': totalFavorites,
-      'totalReviews': totalReviews,
+      'first_name': firstName,
+      'last_name': lastName,
+      'phone': phone,
+      'is_active': isActive,
+      'is_superuser': isSuperuser,
+      'avatar_url': avatarUrl,
     };
   }
 
   @override
   List<Object?> get props => [
-    id,
-    email,
-    isEmailConfirmed,
-    profileImageUrl,
-    firstName,
-    lastName,
-    username,
-    phoneNumber,
-    isPhoneNumberConfirmed,
-    totalBookings,
-    totalFavorites,
-    totalReviews,
+    id, email, username, firstName, lastName, phone, isActive, isSuperuser, avatarUrl,
   ];
 }

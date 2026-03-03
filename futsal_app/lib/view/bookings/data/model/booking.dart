@@ -1,14 +1,20 @@
+/// Matches FastAPI `BookingResponse` schema from `/api/v1/futsal/bookings`
 class Booking {
   final int id;
-  final String userId;
+  final int userId;
   final int groundId;
-  final DateTime bookingDate;
-  final String startTime; // assuming HH:mm or full string from API
+  final String bookingDate; // YYYY-MM-DD
+  final String startTime; // HH:mm:ss
   final String endTime;
-  final int status; // 0=pending,1=confirmed,2=cancelled etc.
+  final String status; // pending | confirmed | cancelled | completed
   final double totalAmount;
-  final DateTime createdAt;
-  final String groundName;
+  final double paidAmount;
+  final String? teamName;
+  final String? notes;
+  final String qrCode;
+  final bool isRecurring;
+  final String? recurringType;
+  final String? cancellationReason;
 
   Booking({
     required this.id,
@@ -19,27 +25,49 @@ class Booking {
     required this.endTime,
     required this.status,
     required this.totalAmount,
-    required this.createdAt,
-    required this.groundName,
+    required this.paidAmount,
+    this.teamName,
+    this.notes,
+    required this.qrCode,
+    required this.isRecurring,
+    this.recurringType,
+    this.cancellationReason,
   });
 
   factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
-      id: json['id'] ?? 0,
-      userId: json['userId'] ?? '',
-      groundId: json['groundId'] ?? 0,
-      bookingDate:
-          DateTime.tryParse(json['bookingDate'] ?? '') ?? DateTime.now(),
-      startTime: json['startTime'] ?? '',
-      endTime: json['endTime'] ?? '',
-      status: json['status'] ?? 0,
-      totalAmount: (json['totalAmount'] is int)
-          ? (json['totalAmount'] as int).toDouble()
-          : (json['totalAmount'] is double)
-          ? json['totalAmount']
-          : 0.0,
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      groundName: json['groundName'] ?? '',
+      id: json['id'] as int? ?? 0,
+      userId: json['user_id'] as int? ?? 0,
+      groundId: json['ground_id'] as int? ?? 0,
+      bookingDate: json['booking_date'] as String? ?? '',
+      startTime: json['start_time'] as String? ?? '',
+      endTime: json['end_time'] as String? ?? '',
+      status: json['status'] as String? ?? 'pending',
+      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0.0,
+      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
+      teamName: json['team_name'] as String?,
+      notes: json['notes'] as String?,
+      qrCode: json['qr_code'] as String? ?? '',
+      isRecurring: json['is_recurring'] as bool? ?? false,
+      recurringType: json['recurring_type'] as String?,
+      cancellationReason: json['cancellation_reason'] as String?,
     );
+  }
+
+  /// Convenience: whether the booking can still be cancelled
+  bool get isCancellable => status == 'pending' || status == 'confirmed';
+
+  /// Status label for display
+  String get statusLabel {
+    switch (status) {
+      case 'confirmed':
+        return 'Confirmed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'completed':
+        return 'Completed';
+      default:
+        return 'Pending';
+    }
   }
 }

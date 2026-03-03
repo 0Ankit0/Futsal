@@ -1,76 +1,72 @@
+/// Matches FastAPI `GroundResponse` schema from `/api/v1/futsal/grounds`
 class FutsalModel {
   final int id;
   final String name;
+  final String slug;
+  final int ownerId;
   final String location;
-  final String ownerId;
-  final int pricePerHour;
+  final double? latitude;
+  final double? longitude;
+  final String? description;
+  final String groundType; // outdoor, indoor, etc.
+  final double pricePerHour;
+  final double? weekendPricePerHour;
+  final String openTime; // HH:mm:ss
+  final String closeTime;
+  final int slotDurationMinutes;
+  final bool isActive;
+  final bool isVerified;
   final double averageRating;
   final int ratingCount;
-  final double latitude;
-  final double longitude;
-  final String description;
-  final int? imageId;
-  final String imageUrl;
-  final String openTime;
-  final String closeTime;
-  final DateTime createdAt;
-  final int bookingCount;
-  final String ownerName;
-  final bool isFavorite;
-  final double? distanceKm;
-  final List<BookedTimeSlot> bookedTimeSlots;
+  final Map<String, dynamic>? amenities;
 
   FutsalModel({
     required this.id,
     required this.name,
-    required this.location,
+    required this.slug,
     required this.ownerId,
+    required this.location,
+    this.latitude,
+    this.longitude,
+    this.description,
+    required this.groundType,
     required this.pricePerHour,
-    required this.averageRating,
-    required this.ratingCount,
-    required this.latitude,
-    required this.longitude,
-    required this.description,
-    this.imageId,
-    required this.imageUrl,
+    this.weekendPricePerHour,
     required this.openTime,
     required this.closeTime,
-    required this.createdAt,
-    required this.bookingCount,
-    required this.ownerName,
-    required this.isFavorite,
-    this.distanceKm,
-    required this.bookedTimeSlots,
+    required this.slotDurationMinutes,
+    required this.isActive,
+    required this.isVerified,
+    required this.averageRating,
+    required this.ratingCount,
+    this.amenities,
   });
 
   factory FutsalModel.fromJson(Map<String, dynamic> json) {
     return FutsalModel(
       id: json['id'] as int,
       name: json['name'] as String,
-      location: json['location'] as String,
-      ownerId: json['ownerId'] as String,
-      pricePerHour: json['pricePerHour'] as int,
-      averageRating: (json['averageRating'] as num).toDouble(),
-      ratingCount: json['ratingCount'] as int,
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      description: json['description'] as String,
-      imageId: json['imageId'] as int?,
-      imageUrl: json['imageUrl'] as String? ?? '',
-      openTime: json['openTime'] as String,
-      closeTime: json['closeTime'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      bookingCount: json['bookingCount'] as int,
-      ownerName: json['ownerName'] as String,
-      isFavorite: json['isFavorite'] as bool? ?? false,
-      distanceKm: json['distanceKm'] != null
-          ? (json['distanceKm'] as num).toDouble()
+      slug: (json['slug'] as String?) ?? '',
+      ownerId: (json['owner_id'] as int?) ?? 0,
+      location: (json['location'] as String?) ?? '',
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
+      description: json['description'] as String?,
+      groundType: (json['ground_type'] as String?) ?? 'outdoor',
+      pricePerHour: (json['price_per_hour'] as num).toDouble(),
+      weekendPricePerHour: json['weekend_price_per_hour'] != null
+          ? (json['weekend_price_per_hour'] as num).toDouble()
           : null,
-      bookedTimeSlots:
-          (json['bookedTimeSlots'] as List<dynamic>?)
-              ?.map((e) => BookedTimeSlot.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      openTime: (json['open_time'] as String?) ?? '06:00:00',
+      closeTime: (json['close_time'] as String?) ?? '22:00:00',
+      slotDurationMinutes: (json['slot_duration_minutes'] as int?) ?? 60,
+      isActive: (json['is_active'] as bool?) ?? true,
+      isVerified: (json['is_verified'] as bool?) ?? false,
+      averageRating: json['average_rating'] != null
+          ? (json['average_rating'] as num).toDouble()
+          : 0.0,
+      ratingCount: (json['rating_count'] as int?) ?? 0,
+      amenities: json['amenities'] as Map<String, dynamic>?,
     );
   }
 
@@ -78,86 +74,53 @@ class FutsalModel {
     return {
       'id': id,
       'name': name,
+      'slug': slug,
+      'owner_id': ownerId,
       'location': location,
-      'ownerId': ownerId,
-      'pricePerHour': pricePerHour,
-      'averageRating': averageRating,
-      'ratingCount': ratingCount,
       'latitude': latitude,
       'longitude': longitude,
       'description': description,
-      'imageId': imageId,
-      'imageUrl': imageUrl,
-      'openTime': openTime,
-      'closeTime': closeTime,
-      'createdAt': createdAt.toIso8601String(),
-      'bookingCount': bookingCount,
-      'ownerName': ownerName,
-      'isFavorite': isFavorite,
-      'distanceKm': distanceKm,
-      'bookedTimeSlots': bookedTimeSlots.map((e) => e.toJson()).toList(),
+      'ground_type': groundType,
+      'price_per_hour': pricePerHour,
+      'weekend_price_per_hour': weekendPricePerHour,
+      'open_time': openTime,
+      'close_time': closeTime,
+      'slot_duration_minutes': slotDurationMinutes,
+      'is_active': isActive,
+      'is_verified': isVerified,
+      'average_rating': averageRating,
+      'rating_count': ratingCount,
+      'amenities': amenities,
     };
   }
 
-  // Convert to Map for compatibility with existing UI
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'location': location,
-      'ownerId': ownerId,
-      'pricePerHour': pricePerHour,
-      'averageRating': averageRating,
-      'ratingCount': ratingCount,
-      'latitude': latitude,
-      'longitude': longitude,
-      'description': description,
-      'imageId': imageId,
-      'imageUrl': imageUrl,
-      'openTime': openTime,
-      'closeTime': closeTime,
-      'createdAt': createdAt.toIso8601String(),
-      'bookingCount': bookingCount,
-      'ownerName': ownerName,
-      'isFavorite': isFavorite,
-      'distanceKm': distanceKm,
-      'bookedTimeSlots': bookedTimeSlots
-          .map(
-            (e) => {
-              'bookingDate': e.bookingDate.toIso8601String(),
-              'startTime': e.startTime,
-              'endTime': e.endTime,
-            },
-          )
-          .toList(),
-    };
-  }
+  /// Alias used by UI screens that navigate via Map<String, dynamic>.
+  Map<String, dynamic> toMap() => toJson();
 }
 
-class BookedTimeSlot {
-  final DateTime bookingDate;
+/// Matches FastAPI `SlotResponse` schema from `/api/v1/futsal/grounds/{id}/slots`
+class SlotModel {
   final String startTime;
   final String endTime;
+  final bool isAvailable;
+  final bool isLocked;
+  final double price;
 
-  BookedTimeSlot({
-    required this.bookingDate,
+  SlotModel({
     required this.startTime,
     required this.endTime,
+    required this.isAvailable,
+    required this.isLocked,
+    required this.price,
   });
 
-  factory BookedTimeSlot.fromJson(Map<String, dynamic> json) {
-    return BookedTimeSlot(
-      bookingDate: DateTime.parse(json['bookingDate'] as String),
-      startTime: json['startTime'] as String,
-      endTime: json['endTime'] as String,
+  factory SlotModel.fromJson(Map<String, dynamic> json) {
+    return SlotModel(
+      startTime: json['start_time'] as String,
+      endTime: json['end_time'] as String,
+      isAvailable: (json['is_available'] as bool?) ?? true,
+      isLocked: (json['is_locked'] as bool?) ?? false,
+      price: (json['price'] as num).toDouble(),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'bookingDate': bookingDate.toIso8601String(),
-      'startTime': startTime,
-      'endTime': endTime,
-    };
   }
 }

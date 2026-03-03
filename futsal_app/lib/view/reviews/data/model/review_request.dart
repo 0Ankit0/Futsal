@@ -1,22 +1,20 @@
+/// Matches FastAPI `ReviewCreate` schema — POST /api/v1/futsal/grounds/{id}/reviews
 class ReviewRequest {
-  final int groundId;
   final int rating;
   final String? comment;
-  final int? imageId;
+  final String? imageUrl;
 
   ReviewRequest({
-    required this.groundId,
     required this.rating,
     this.comment,
-    this.imageId,
+    this.imageUrl,
   });
 
   Map<String, dynamic> toJson() {
     return {
-      'groundId': groundId,
       'rating': rating,
-      'comment': comment,
-      'imageId': imageId,
+      if (comment != null) 'comment': comment,
+      if (imageUrl != null) 'image_url': imageUrl,
     };
   }
 }
