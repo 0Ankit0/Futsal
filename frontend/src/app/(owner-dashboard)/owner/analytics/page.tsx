@@ -7,6 +7,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   TrendingUp, Calendar, DollarSign, Users, BarChart2, Clock,
 } from 'lucide-react';
+import {
+  ResponsiveContainer, BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+} from 'recharts';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -113,6 +117,27 @@ export default function OwnerAnalyticsPage() {
     [bookings]
   );
 
+  // Daily revenue + booking count chart data (last 30 days)
+  const dailyChartData = useMemo(() => {
+    const map: Record<string, { revenue: number; bookings: number }> = {};
+    bookings
+      .filter((b) => b.status === 'confirmed' || b.status === 'completed')
+      .forEach((b) => {
+        if (!map[b.booking_date]) map[b.booking_date] = { revenue: 0, bookings: 0 };
+        map[b.booking_date].revenue   += b.total_amount;
+        map[b.booking_date].bookings  += 1;
+      });
+    // Build last 30 days including zeros
+    const result = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      result.push({ date: key.slice(5), ...( map[key] ?? { revenue: 0, bookings: 0 }) });
+    }
+    return result;
+  }, [bookings]);
+
   if (groundsLoading) {
     return (
       <div className="space-y-6">
@@ -182,6 +207,60 @@ export default function OwnerAnalyticsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Daily Revenue Bar Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BarChart2 className="h-4 w-4 text-gray-400" /> Daily Revenue — Last 30 Days
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-48 w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={dailyChartData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} interval={4} />
+                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  formatter={(v: number, name: string) =>
+                    name === 'revenue' ? [`NPR ${v.toLocaleString()}`, 'Revenue'] : [v, 'Bookings']
+                  }
+                />
+                <Bar dataKey="revenue" name="revenue" fill="#6366f1" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Booking Trend Line Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-gray-400" /> Booking Trend — Last 30 Days
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <LineChart data={dailyChartData} margin={{ top: 4, right: 8, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af' }} interval={4} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="bookings" stroke="#10b981" strokeWidth={2} dot={false} name="Bookings" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Booking status breakdown */}

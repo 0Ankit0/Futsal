@@ -11,18 +11,20 @@ import {
   MapPin,
   Wallet,
   BadgeCheck,
+  BarChart2,
 } from 'lucide-react';
 import { OrgSwitcher } from './org-switcher';
 
 const adminNavigation = [
-  { name: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'Manage Users', href: '/admin/users', icon: Users },
-  { name: 'Roles & Permissions', href: '/rbac', icon: Shield },
-  { name: 'Active Sessions', href: '/tokens', icon: Activity },
-  { name: 'Grounds', href: '/admin/grounds', icon: MapPin },
-  { name: 'Payouts', href: '/admin/payouts', icon: Wallet },
-  { name: 'Subscriptions', href: '/admin/subscriptions', icon: BadgeCheck },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Admin Dashboard', href: '/admin/dashboard',    icon: LayoutDashboard },
+  { name: 'Analytics',       href: '/admin/analytics',    icon: BarChart2 },
+  { name: 'Manage Users',    href: '/admin/users',        icon: Users },
+  { name: 'Roles & Permissions', href: '/rbac',           icon: Shield },
+  { name: 'Active Sessions', href: '/tokens',             icon: Activity },
+  { name: 'Grounds',         href: '/admin/grounds',      icon: MapPin },
+  { name: 'Payouts',         href: '/admin/payouts',      icon: Wallet },
+  { name: 'Subscriptions',   href: '/admin/subscriptions',icon: BadgeCheck },
+  { name: 'Settings',        href: '/settings',           icon: Settings },
 ];
 
 export function AdminSidebar() {
