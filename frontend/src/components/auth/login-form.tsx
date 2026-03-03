@@ -16,7 +16,6 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { startOAuthLogin } from '@/lib/oauth';
 import type { OTPLoginResponse } from '@/types';
 
 const loginSchema = z.object({
@@ -97,27 +96,6 @@ export function LoginForm() {
           <Button type="submit" className="w-full" isLoading={isLoading}>
             Sign in
           </Button>
-
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3 w-full">
-            <Button variant="outline" type="button" onClick={() => startOAuthLogin('google')}>
-              Google
-            </Button>
-            <Button variant="outline" type="button" onClick={() => startOAuthLogin('github')}>
-              GitHub
-            </Button>
-            <Button variant="outline" type="button" onClick={() => startOAuthLogin('facebook')}>
-              Facebook
-            </Button>
-          </div>
 
           <p className="text-sm text-center text-gray-600">
             Don&apos;t have an account?{' '}

@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from jose import jwt
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from urllib.parse import urlencode
 
@@ -14,6 +15,7 @@ from src.apps.core.config import OAUTH_PROVIDERS, settings
 from src.apps.core.security import TokenType
 from src.apps.iam.api.deps import get_db
 from src.apps.iam.models.token_tracking import TokenTracking
+from src.apps.iam.schemas.token import Token
 from src.apps.iam.utils.ip_access import revoke_tokens_for_ip, get_client_ip
 from src.apps.iam.utils.social import (
     extract_user_info,
@@ -23,6 +25,112 @@ from src.apps.iam.utils.social import (
 )
 
 router = APIRouter()
+
+
+class MobileGoogleTokenRequest(BaseModel):
+    id_token: str
+
+
+@router.post(
+    "/social/google/mobile",
+    response_model=Token,
+    summary="Mobile Google Sign-In",
+    description=(
+        "Accepts a Google ID token obtained by the mobile app via the native "
+        "Google Sign-In SDK. Verifies the token with Google, then finds or "
+        "creates a user account and returns JWT access + refresh tokens."
+    ),
+)
+async def mobile_google_login(
+    payload: MobileGoogleTokenRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> Token:
+    """Verify a Google ID token from the mobile Google Sign-In SDK."""
+    # Verify the Google ID token by calling Google's tokeninfo endpoint
+    async with httpx.AsyncClient(timeout=10) as http:
+        try:
+            resp = await http.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"id_token": payload.id_token},
+            )
+            resp.raise_for_status()
+            token_info: dict[str, Any] = resp.json()
+        except httpx.HTTPStatusError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid Google ID token",
+            )
+
+    # Verify audience matches our client ID (if configured)
+    google_client_id = settings.GOOGLE_CLIENT_ID if hasattr(settings, "GOOGLE_CLIENT_ID") else None
+    if google_client_id and token_info.get("aud") != google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google token audience mismatch",
+        )
+
+    email: Optional[str] = token_info.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account has no email address",
+        )
+
+    if not token_info.get("email_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google account email is not verified",
+        )
+
+    social_id: str = token_info.get("sub", "")
+    given_name: str = token_info.get("given_name", "")
+    family_name: str = token_info.get("family_name", "")
+    display_name: str = f"{given_name} {family_name}".strip() or email.split("@")[0]
+
+    user = await find_or_create_social_user(db, "google", social_id, email, display_name)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This account has been deactivated.",
+        )
+
+    ip_address = get_client_ip(request)
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(user.id, expires_delta=access_token_expires)
+    refresh_token = security.create_refresh_token(user.id)
+
+    access_payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
+    refresh_payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
+
+    await revoke_tokens_for_ip(db, user.id, ip_address)
+
+    db.add(TokenTracking(
+        user_id=user.id,
+        token_jti=access_payload["jti"],
+        token_type=TokenType.ACCESS,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        expires_at=datetime.fromtimestamp(access_payload["exp"], tz=timezone.utc),
+    ))
+    db.add(TokenTracking(
+        user_id=user.id,
+        token_jti=refresh_payload["jti"],
+        token_type=TokenType.REFRESH,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        expires_at=datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc),
+    ))
+    await db.commit()
+
+    return Token(
+        access=access_token,
+        refresh=refresh_token,
+        token_type=TokenType.BEARER.value,
+    )
 
 
 @router.get(
