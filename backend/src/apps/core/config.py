@@ -207,6 +207,10 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = "your-github-client-secret"
     FACEBOOK_CLIENT_ID: str = "your-facebook-client-id"
     FACEBOOK_CLIENT_SECRET: str = "your-facebook-client-secret"
+    # Per-platform enable/disable flags — set to True in .env once credentials are configured
+    GOOGLE_LOGIN_ENABLED: bool = False
+    GITHUB_LOGIN_ENABLED: bool = False
+    FACEBOOK_LOGIN_ENABLED: bool = False
     # URL to redirect user to after successful social login (frontend URL)
     SOCIAL_AUTH_REDIRECT_URL: str = "http://localhost:3000/auth/callback"
 

@@ -133,6 +133,25 @@ async def mobile_google_login(
     )
 
 
+def _provider_enabled(provider: str) -> bool:
+    """Return True if the given social provider is enabled in settings."""
+    return {
+        "google": settings.GOOGLE_LOGIN_ENABLED,
+        "github": settings.GITHUB_LOGIN_ENABLED,
+        "facebook": settings.FACEBOOK_LOGIN_ENABLED,
+    }.get(provider, False)
+
+
+@router.get(
+    "/social/providers",
+    summary="List enabled social login providers",
+    description="Returns which social OAuth2 providers are currently enabled.",
+)
+async def list_social_providers() -> dict[str, list[str]]:
+    enabled = [p for p in OAUTH_PROVIDERS if _provider_enabled(p)]
+    return {"providers": enabled}
+
+
 @router.get(
     "/social/{provider}/",
     summary="Initiate social login",
@@ -143,6 +162,11 @@ async def social_login(provider: str) -> RedirectResponse:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Provider '{provider}' is not supported. Supported: {list(OAUTH_PROVIDERS.keys())}",
+        )
+    if not _provider_enabled(provider):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Social login via '{provider}' is currently disabled.",
         )
     config = OAUTH_PROVIDERS[provider]
     client_id, _ = get_provider_credentials(provider)
@@ -177,6 +201,11 @@ async def social_callback(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Provider '{provider}' is not supported",
+        )
+    if not _provider_enabled(provider):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Social login via '{provider}' is currently disabled.",
         )
 
     if not security.verify_oauth_state(state, provider):
