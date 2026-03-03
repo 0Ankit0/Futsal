@@ -83,4 +83,5 @@ export {
   useWSStats,
   useWSIsOnline,
 } from './use-websocket';
-\nexport * from './use-social-providers';
+export * from './use-social-providers';
+export * from './use-admin-analytics';
