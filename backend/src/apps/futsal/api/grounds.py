@@ -13,6 +13,7 @@ from src.apps.iam.models.user import User
 from src.apps.futsal.models.ground import FutsalGround
 from src.apps.futsal.models.ground_image import GroundImage
 from src.apps.futsal.models.ground_closure import GroundClosure
+from src.apps.core.analytics import analytics
 from src.apps.futsal.schemas import (
     GroundCreate, GroundUpdate, GroundResponse, SlotResponse, GroundClosureCreate
 )
@@ -122,6 +123,15 @@ async def create_ground(
     db.add(ground)
     await db.commit()
     await db.refresh(ground)
+    analytics.track(
+        distinct_id=str(current_user.id),
+        event="ground_created",
+        properties={
+            "ground_id": ground.id,
+            "ground_name": ground.name,
+            "ground_type": ground.ground_type,
+        },
+    )
     return ground
 
 
@@ -173,6 +183,11 @@ async def verify_ground(
     db.add(ground)
     await db.commit()
     await db.refresh(ground)
+    analytics.track(
+        distinct_id=str(current_user.id),
+        event="ground_verified",
+        properties={"ground_id": ground_id, "owner_id": ground.owner_id},
+    )
     return ground
 
 

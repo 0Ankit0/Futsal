@@ -229,6 +229,19 @@ async def create_booking(
     await db.commit()
     await db.refresh(booking)
 
+    analytics.track(
+        distinct_id=str(booking.user_id),
+        event="booking_created",
+        properties={
+            "booking_id": booking.id,
+            "ground_id": booking.ground_id,
+            "booking_date": str(booking.booking_date),
+            "start_time": str(booking.start_time),
+            "end_time": str(booking.end_time),
+            "amount": booking.total_amount,
+        },
+    )
+
     # Notify clients watching this ground's room that a slot is now locked
     await _push_slot_event(ground.id, "slot.locked", booking)
 
@@ -351,5 +364,15 @@ async def complete_booking(db: AsyncSession, booking: Booking) -> Booking:
     await db.refresh(booking)
 
     await _push_slot_event(booking.ground_id, "slot.completed", booking)
+
+    analytics.track(
+        distinct_id=str(booking.user_id),
+        event="booking_completed",
+        properties={
+            "booking_id": booking.id,
+            "ground_id": booking.ground_id,
+            "amount": booking.total_amount,
+        },
+    )
 
     return booking

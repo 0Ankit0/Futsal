@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 from src.apps.core import security
 from src.apps.core.config import OAUTH_PROVIDERS, settings
 from src.apps.core.security import TokenType
+from src.apps.core.analytics import analytics
 from src.apps.iam.api.deps import get_db
 from src.apps.iam.models.token_tracking import TokenTracking
 from src.apps.iam.schemas.token import Token
@@ -125,6 +126,9 @@ async def mobile_google_login(
         expires_at=datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc),
     ))
     await db.commit()
+
+    analytics.identify(distinct_id=str(user.id), properties={"email": user.email})
+    analytics.track(distinct_id=str(user.id), event="user_login", properties={"method": "google_mobile"})
 
     return Token(
         access=access_token,
@@ -333,6 +337,9 @@ async def social_callback(
         expires_at=datetime.fromtimestamp(refresh_payload["exp"], tz=timezone.utc),
     ))
     await db.commit()
+
+    analytics.identify(distinct_id=str(user.id), properties={"email": user.email})
+    analytics.track(distinct_id=str(user.id), event="user_login", properties={"method": f"social_{provider}"})
 
     # Redirect the popup back to the frontend auth-callback page with tokens as
     # query params. The /auth-callback page stores the tokens and continues the flow.

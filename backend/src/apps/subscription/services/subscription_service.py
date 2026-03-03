@@ -38,6 +38,11 @@ async def start_trial(
     db.add(sub)
     await db.commit()
     await db.refresh(sub)
+    analytics.track(
+        distinct_id=str(owner_id),
+        event="trial_started",
+        properties={"plan_id": plan_id, "trial_days": plan.trial_days},
+    )
     return sub
 
 
@@ -84,6 +89,10 @@ async def activate_subscription(
             "period_end": str(sub.current_period_end),
         },
     )
+    analytics.identify(
+        distinct_id=str(owner_id),
+        properties={"subscription_active": True, "subscription_plan_id": plan_id},
+    )
     return sub
 
 
@@ -104,6 +113,15 @@ async def cancel_subscription(
     db.add(sub)
     await db.commit()
     await db.refresh(sub)
+    analytics.track(
+        distinct_id=str(owner_id),
+        event="subscription_cancelled",
+        properties={"plan_id": sub.plan_id, "immediately": immediately},
+    )
+    analytics.identify(
+        distinct_id=str(owner_id),
+        properties={"subscription_active": False},
+    )
     return sub
 
 

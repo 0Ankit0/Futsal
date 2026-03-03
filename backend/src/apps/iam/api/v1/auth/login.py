@@ -11,6 +11,7 @@ from src.apps.core import security
 from src.apps.core.security import TokenType
 from src.apps.core.cache import RedisCache
 from src.apps.iam.api.deps import get_current_user, get_db
+from src.apps.core.analytics import analytics
 from src.apps.iam.models.user import User
 from src.apps.iam.models.login_attempt import LoginAttempt
 from src.apps.iam.models.token_tracking import TokenTracking
@@ -150,7 +151,17 @@ async def login_access_token(
         )
         db.add(refresh_token_tracking)
         await db.commit()
-        
+
+        analytics.identify(
+            distinct_id=str(user.id),
+            properties={"email": user.email, "username": user.username},
+        )
+        analytics.track(
+            distinct_id=str(user.id),
+            event="user_login",
+            properties={"method": "email"},
+        )
+
         if set_cookie:
             response.set_cookie(
                 key=settings.ACCESS_TOKEN_COOKIE,
@@ -236,6 +247,7 @@ async def logout(
         
         response.delete_cookie(key=settings.ACCESS_TOKEN_COOKIE)
         response.delete_cookie(key=settings.REFRESH_TOKEN_COOKIE)
+        analytics.track(distinct_id=str(current_user.id), event="user_logout", properties={})
         return {"message": "Successfully logged out from this device"}
     except Exception:
         raise HTTPException(

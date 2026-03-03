@@ -10,6 +10,7 @@ from src.apps.core import security
 from src.apps.core.security import TokenType
 from src.apps.iam.api.deps import get_current_user, get_db
 from src.apps.iam.models.user import User, UserProfile
+from src.apps.core.analytics import analytics
 from src.apps.iam.models.token_tracking import TokenTracking
 from src.apps.iam.schemas.token import Token
 from src.apps.iam.schemas.user import UserCreate
@@ -109,6 +110,21 @@ async def signup(
         )
         db.add(refresh_token_tracking)
         await db.commit()
+
+        analytics.identify(
+            distinct_id=str(new_user.id),
+            properties={
+                "email": new_user.email,
+                "username": new_user.username,
+                "first_name": login_data.first_name or "",
+                "last_name": login_data.last_name or "",
+            },
+        )
+        analytics.track(
+            distinct_id=str(new_user.id),
+            event="user_registered",
+            properties={"method": "email"},
+        )
 
         if set_cookie:
             response.set_cookie(

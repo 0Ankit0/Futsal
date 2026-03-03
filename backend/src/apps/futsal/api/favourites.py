@@ -10,6 +10,7 @@ from src.apps.iam.models.user import User
 from src.apps.futsal.models.favourite import FavouriteGround
 from src.apps.futsal.models.waitlist import WaitlistEntry
 from src.apps.futsal.schemas import GroundClosureCreate
+from src.apps.core.analytics import analytics
 
 router = APIRouter(tags=["Favourites & Waitlist"])
 
@@ -31,11 +32,21 @@ async def toggle_favourite(
     if fav:
         await db.delete(fav)
         await db.commit()
+        analytics.track(
+            distinct_id=str(current_user.id),
+            event="ground_favourited",
+            properties={"ground_id": ground_id, "action": "remove"},
+        )
         return {"added": False, "ground_id": ground_id}
     try:
         fav = FavouriteGround(user_id=current_user.id, ground_id=ground_id)
         db.add(fav)
         await db.commit()
+        analytics.track(
+            distinct_id=str(current_user.id),
+            event="ground_favourited",
+            properties={"ground_id": ground_id, "action": "add"},
+        )
         return {"added": True, "ground_id": ground_id}
     except IntegrityError:
         await db.rollback()
@@ -71,6 +82,14 @@ async def join_waitlist(
     db.add(waitlist)
     await db.commit()
     await db.refresh(waitlist)
+    analytics.track(
+        distinct_id=str(current_user.id),
+        event="waitlist_joined",
+        properties={
+            "ground_id": waitlist.ground_id,
+            "slot": f"{waitlist.booking_date}T{waitlist.start_time}",
+        },
+    )
     return waitlist
 
 
