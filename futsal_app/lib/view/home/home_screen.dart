@@ -526,9 +526,9 @@ class _TrendingCard extends StatelessWidget {
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(Dimension.width(12)),
                 ),
-                child: court['imageUrl'] != null
+                child: court['image_url'] ?? court['imageUrl'] != null
                     ? Image.network(
-                        court['imageUrl'],
+                        court['image_url'] ?? court['imageUrl'],
                         width: double.infinity,
                         fit: BoxFit.cover,
                       )
@@ -654,8 +654,8 @@ class _CourtCard extends StatelessWidget {
               child: SizedBox(
                 width: Dimension.width(100),
                 height: Dimension.height(100),
-                child: court['imageUrl'] != null
-                    ? Image.network(court['imageUrl'], fit: BoxFit.cover)
+                child: court['image_url'] ?? court['imageUrl'] != null
+                    ? Image.network(court['image_url'] ?? court['imageUrl'], fit: BoxFit.cover)
                     : Container(color: Colors.grey[200]),
               ),
             ),
@@ -733,7 +733,7 @@ class _CourtCard extends StatelessWidget {
                         ),
                         SizedBox(width: Dimension.width(2)),
                         Text(
-                          '${court['averageRating'] ?? 4.5}',
+                          '${court['average_rating'] ?? court['averageRating'] ?? 4.5}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: Dimension.font(11),
@@ -790,9 +790,9 @@ class _GridCourtCard extends StatelessWidget {
                       borderRadius: BorderRadius.vertical(
                         top: Radius.circular(Dimension.width(12)),
                       ),
-                      child: court['imageUrl'] != null
+                      child: court['image_url'] ?? court['imageUrl'] != null
                           ? Image.network(
-                              court['imageUrl'],
+                              court['image_url'] ?? court['imageUrl'],
                               width: double.infinity,
                               fit: BoxFit.cover,
                             )
@@ -821,7 +821,7 @@ class _GridCourtCard extends StatelessWidget {
                           ),
                           SizedBox(width: Dimension.width(2)),
                           Text(
-                            '${court['averageRating'] ?? 4.5}',
+                            '${court['average_rating'] ?? court['averageRating'] ?? 4.5}',
                             style: TextStyle(
                               fontSize: Dimension.font(10),
                               fontWeight: FontWeight.bold,

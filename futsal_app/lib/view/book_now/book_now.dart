@@ -30,8 +30,8 @@ class _BookNowState extends State<BookNow> {
   }
 
   List<String> _generateTimeSlots() {
-    final openTime = widget.futsalData['openTime'] ?? '06:00 AM';
-    final closeTime = widget.futsalData['closeTime'] ?? '10:00 PM';
+    final openTime = widget.futsalData['open_time'] ?? widget.futsalData['openTime'] ?? '06:00 AM';
+    final closeTime = widget.futsalData['close_time'] ?? widget.futsalData['closeTime'] ?? '10:00 PM';
 
     final openHour = _parseTime(openTime);
     final closeHour = _parseTime(closeTime);
@@ -123,26 +123,20 @@ class _BookNowState extends State<BookNow> {
         throw Exception('User profile not loaded');
       }
 
-      final userId = profileState.userInfo.id;
       final groundId = widget.futsalData['_id'] ?? widget.futsalData['id'];
       final selectedDate = _generateNext7Days()[_selectedDateIndex];
 
-      final bookingDate = DateTime.utc(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-      );
+      final bookingDateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
 
       final times = _selectedTimeSlot!.split(' - ');
       final startTime = _convertTo24HourFormat(times[0]);
       final endTime = _convertTo24HourFormat(times[1]);
 
       await _bookingRepo.createBooking(
-        userId: userId,
         groundId: groundId is int
             ? groundId
             : int.tryParse(groundId.toString()) ?? 0,
-        bookingDate: bookingDate,
+        bookingDate: bookingDateStr,
         startTime: startTime,
         endTime: endTime,
       );
@@ -201,8 +195,8 @@ class _BookNowState extends State<BookNow> {
   void _showCustomBookingDialog(BuildContext context) {
     int selectedDuration = 1;
     String? selectedStartTime;
-    final openTime = widget.futsalData['openTime'] ?? '06:00 AM';
-    final closeTime = widget.futsalData['closeTime'] ?? '10:00 PM';
+    final openTime = widget.futsalData['open_time'] ?? widget.futsalData['openTime'] ?? '06:00 AM';
+    final closeTime = widget.futsalData['close_time'] ?? widget.futsalData['closeTime'] ?? '10:00 PM';
     final openHour = _parseTime(openTime);
     final closeHour = _parseTime(closeTime);
 
@@ -460,7 +454,7 @@ class _BookNowState extends State<BookNow> {
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 Text(
-                  'Rs.${widget.futsalData['pricePerHour'] ?? 0}/hour',
+                  'Rs.${widget.futsalData['price_per_hour'] ?? widget.futsalData['pricePerHour'] ?? 0}/hour',
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
               ],
@@ -728,7 +722,7 @@ class _BookNowState extends State<BookNow> {
                     _buildInfoRow('Time', _selectedTimeSlot ?? ''),
                     _buildInfoRow(
                       'Total',
-                      'Rs.${widget.futsalData['pricePerHour'] ?? 0}',
+                      'Rs.${widget.futsalData['price_per_hour'] ?? widget.futsalData['pricePerHour'] ?? 0}',
                     ),
                     const SizedBox(height: 100),
                   ],

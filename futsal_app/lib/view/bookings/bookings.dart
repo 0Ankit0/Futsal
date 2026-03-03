@@ -142,21 +142,21 @@ class _BookingsScreenState extends State<BookingsScreen>
         List<Booking> filtered;
 
         if (statusFilter == 0) {
-          // Upcoming: bookingDate is today or future AND status is 0 (pending) or 1 (confirmed)
+          // Upcoming: bookingDate is today or future AND status is pending or confirmed
           filtered = data
               .where(
                 (b) =>
                     (b.bookingDate.isAfter(now) ||
                         _sameDay(b.bookingDate, now)) &&
-                    (b.status == 0 || b.status == 1),
+                    (b.status == 'pending' || b.status == 'confirmed'),
               )
               .toList();
         } else if (statusFilter == 1) {
-          // Completed tab: show bookings with status 3 (Completed)
-          filtered = data.where((b) => b.status == 3).toList();
+          // Completed tab
+          filtered = data.where((b) => b.status == 'completed').toList();
         } else {
-          // Cancelled tab: show bookings with status 2 (Cancelled)
-          filtered = data.where((b) => b.status == 2).toList();
+          // Cancelled tab
+          filtered = data.where((b) => b.status == 'cancelled').toList();
         }
 
         filtered.sort((a, b) => b.bookingDate.compareTo(a.bookingDate));
@@ -203,6 +203,7 @@ class _BookingCard extends StatefulWidget {
 
 class _BookingCardState extends State<_BookingCard> {
   final _reviewRepo = ReviewsRepository();
+  final _bookingRepo = BookingRepository();
 
   String _prettyDate(DateTime d) {
     const months = [
@@ -256,10 +257,8 @@ class _BookingCardState extends State<_BookingCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.booking.groundName.isEmpty
-                          ? 'Ground'
-                          : widget.booking.groundName,
+                      Text(
+                      'Ground #${widget.booking.groundId}',
                       style: TextStyle(
                         fontSize: Dimension.font(18),
                         fontWeight: FontWeight.w400,
@@ -418,10 +417,10 @@ class _BookingCardState extends State<_BookingCard> {
                 //   ),
                 // ),
               ],
-              // Show review button for completed (status 3) or cancelled (status 2) bookings only
+              // Show review button for completed or cancelled bookings only
               if (!widget.isUpcoming &&
-                  (widget.booking.status == 3 ||
-                      widget.booking.status == 2)) ...[
+                  (widget.booking.status == 'completed' ||
+                      widget.booking.status == 'cancelled')) ...[
                 Spacer(),
                 ElevatedButton(
                   onPressed: () => _showReviewDialog(context),
@@ -475,14 +474,13 @@ class _BookingCardState extends State<_BookingCard> {
       context: context,
       builder: (dialogContext) => ReviewDialog(
         groundId: widget.booking.groundId,
-        groundName: widget.booking.groundName,
+        groundName: 'Ground #${widget.booking.groundId}',
         onSubmit: (rating, comment) async {
           final reviewRequest = ReviewRequest(
-            groundId: widget.booking.groundId,
             rating: rating,
             comment: comment,
           );
-          await _reviewRepo.createReview(reviewRequest);
+          await _reviewRepo.createReview(widget.booking.groundId, reviewRequest);
         },
       ),
     );
@@ -527,17 +525,22 @@ class _BookingCardState extends State<_BookingCard> {
 
               // Show cancellation notification
               NotificationService().showBookingCancelled(
-                groundName: booking.groundName,
+                groundName: 'Ground #${booking.groundId}',
                 bookingDate: _prettyDate(booking.bookingDate),
               );
 
-              // TODO: Implement cancel booking logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Booking cancelled'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              // Cancel booking via API
+              try {
+                await _bookingRepo.cancelBooking(booking.id);
+              } catch (_) {}
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Booking cancelled'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

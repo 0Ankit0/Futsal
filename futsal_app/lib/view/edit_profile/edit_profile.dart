@@ -193,20 +193,15 @@ class _EditProfileState extends State<EditProfile> {
 
     try {
       final repository = ProfileRepository();
-      int? uploadedImageId;
-
       // Upload image if selected
       if (_selectedImage != null) {
-        uploadedImageId = await repository.uploadImage(_selectedImage!);
+        await repository.uploadAvatar(_selectedImage!);
       }
 
       // Build selective update body
       final Map<String, dynamic> updates = {};
       if (_usernameController.text.trim() != _originalUsername) {
         updates['username'] = _usernameController.text.trim();
-      }
-      if (uploadedImageId != null) {
-        updates['profileImageId'] = uploadedImageId;
       }
 
       // Update if there are changes

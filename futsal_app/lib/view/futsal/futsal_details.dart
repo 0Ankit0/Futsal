@@ -277,12 +277,12 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                       background: Stack(
                         fit: StackFit.expand,
                         children: [
-                          if (widget.futsalData['imageUrl'] != null &&
-                              widget.futsalData['imageUrl']
+                          if (widget.futsalData['image_url'] != null &&
+                              widget.futsalData['image_url']
                                   .toString()
                                   .isNotEmpty)
                             Image.network(
-                              widget.futsalData['imageUrl'].toString(),
+                              widget.futsalData['image_url'].toString(),
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
@@ -365,7 +365,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                           ),
                                           SizedBox(width: Dimension.width(6)),
                                           Text(
-                                            widget.futsalData['averageRating']
+                                            widget.futsalData['average_rating']
                                                     ?.toString() ??
                                                 '0.0',
                                             style: TextStyle(
@@ -378,7 +378,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                           ),
                                           SizedBox(width: Dimension.width(8)),
                                           Text(
-                                            '(${widget.futsalData['ratingCount'] ?? 0} reviews)',
+                                            '(${widget.futsalData['rating_count'] ?? 0} reviews)',
                                             style: TextStyle(
                                               fontSize: Dimension.font(12),
                                               color: Theme.of(context)
@@ -399,17 +399,12 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                                 .withValues(alpha: 0.6),
                                           ),
                                           SizedBox(width: Dimension.width(6)),
-                                          Text(
-                                            '${widget.futsalData['bookingCount'] ?? 0} bookings',
-                                            style: TextStyle(
-                                              fontSize: Dimension.font(12),
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onPrimary
-                                                  .withValues(alpha: 0.6),
-                                              fontWeight: FontWeight.w400,
+                                          if (widget.futsalData['is_verified'] == true)
+                                            Icon(
+                                              Icons.verified,
+                                              size: Dimension.width(14),
+                                              color: Colors.blue,
                                             ),
-                                          ),
                                         ],
                                       ),
                                     ],
@@ -476,7 +471,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                       Row(
                                         children: [
                                           Text(
-                                            widget.futsalData['location'] ?? '',
+                                            widget.futsalData['location'] ?? widget.futsalData['address'] ?? '',
                                             style: TextStyle(
                                               fontSize: Dimension.font(13),
                                               color: Theme.of(context)
@@ -487,7 +482,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                             ),
                                           ),
                                           Text(
-                                            '${widget.futsalData['distanceKm'] ?? '  --'} km',
+                                            '${widget.futsalData['distance_km'] ?? widget.futsalData['distanceKm'] ?? '--'} km',
                                             style: TextStyle(
                                               fontSize: Dimension.font(13),
                                               color: Theme.of(context)
@@ -539,7 +534,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                                   ),
                                   SizedBox(height: Dimension.height(4)),
                                   Text(
-                                    '${_fmtTime(widget.futsalData['openTime'])} - ${_fmtTime(widget.futsalData['closeTime'])}',
+                                    '${_fmtTime(widget.futsalData['open_time'] ?? widget.futsalData['openTime'])} - ${_fmtTime(widget.futsalData['close_time'] ?? widget.futsalData['closeTime'])}',
                                     style: TextStyle(
                                       fontSize: Dimension.font(14),
                                       fontWeight: FontWeight.w400,
@@ -606,101 +601,29 @@ class _FutsalDetailsState extends State<FutsalDetails> {
 
                           Builder(
                             builder: (context) {
-                              final raw = widget.futsalData['bookedTimeSlots'];
-                              final slots = (raw is List) ? raw : <dynamic>[];
-
-                              if (slots.isEmpty) {
-                                return Container(
-                                  width: double.infinity,
-                                  margin: EdgeInsets.only(
-                                    bottom: Dimension.height(10),
+                              return Container(
+                                width: double.infinity,
+                                margin: EdgeInsets.only(
+                                  bottom: Dimension.height(10),
+                                ),
+                                padding: EdgeInsets.all(Dimension.width(12)),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.04),
+                                  borderRadius: BorderRadius.circular(
+                                    Dimension.width(10),
                                   ),
-                                  padding: EdgeInsets.all(Dimension.width(12)),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withOpacity(0.04),
-                                    borderRadius: BorderRadius.circular(
-                                      Dimension.width(10),
-                                    ),
-                                    border: Border.all(
-                                      color: Colors.red.withOpacity(0.12),
-                                    ),
+                                  border: Border.all(
+                                    color: Colors.blue.withOpacity(0.12),
                                   ),
-                                  child: Text(
-                                    'No booked slots',
-                                    style: TextStyle(
-                                      fontSize: Dimension.font(13),
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.red[700],
-                                    ),
+                                ),
+                                child: Text(
+                                  'Tap "Book Now" below to view and select available time slots.',
+                                  style: TextStyle(
+                                    fontSize: Dimension.font(13),
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.blue[700],
                                   ),
-                                );
-                              }
-
-                              return Column(
-                                children: slots.map((slot) {
-                                  String formattedDate = 'N/A';
-                                  try {
-                                    if (slot['bookingDate'] != null) {
-                                      final bookingDate = DateTime.parse(
-                                        slot['bookingDate'],
-                                      );
-                                      formattedDate = DateFormat(
-                                        'MMM dd, yyyy',
-                                      ).format(bookingDate);
-                                    }
-                                  } catch (_) {
-                                    formattedDate =
-                                        slot['bookingDate']?.toString() ??
-                                        'N/A';
-                                  }
-
-                                  final start = slot['startTime'] ?? 'N/A';
-                                  final end = slot['endTime'] ?? 'N/A';
-
-                                  return Container(
-                                    width: double.infinity,
-                                    margin: EdgeInsets.only(
-                                      bottom: Dimension.height(10),
-                                    ),
-                                    padding: EdgeInsets.all(
-                                      Dimension.width(12),
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.06),
-                                      borderRadius: BorderRadius.circular(
-                                        Dimension.width(10),
-                                      ),
-                                      border: Border.all(
-                                        color: Colors.red.withOpacity(0.14),
-                                      ),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          formattedDate,
-                                          style: TextStyle(
-                                            fontSize: Dimension.font(13),
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.red[800],
-                                          ),
-                                        ),
-                                        SizedBox(height: Dimension.height(6)),
-                                        Text(
-                                          '${_fmtTime(start)} - ${_fmtTime(end)}',
-                                          style: TextStyle(
-                                            fontSize: Dimension.font(13),
-                                            fontWeight: FontWeight.w400,
-                                            color: Colors.red[700]?.withOpacity(
-                                              0.9,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
+                                ),
                               );
                             },
                           ),
@@ -761,7 +684,7 @@ class _FutsalDetailsState extends State<FutsalDetails> {
                           Row(
                             children: [
                               Text(
-                                'Rs.${widget.futsalData['pricePerHour'] ?? '0'}',
+                                'Rs.${widget.futsalData['price_per_hour'] ?? widget.futsalData['pricePerHour'] ?? '0'}',
                                 style: TextStyle(
                                   fontSize: Dimension.font(15),
                                   color: Theme.of(context).primaryColor,

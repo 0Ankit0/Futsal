@@ -6,6 +6,7 @@ import '../auth/bloc/auth_event.dart';
 import '../auth/bloc/auth_state.dart';
 import '../auth/login.dart';
 import '../edit_profile/edit_profile.dart';
+import '../loyalty/loyalty_screen.dart';
 import '../settings/settings.dart';
 import 'notifications_settings.dart';
 import 'privacy_policy.dart';
@@ -72,7 +73,7 @@ class _ProfileState extends State<Profile> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(500),
                                 child: Image.network(
-                                  userInfo.fullImageUrl ??
+                                  userInfo.fullAvatarUrl ??
                                       'https://www.gravatar.com/avatar/placeholder',
                                   width: Dimension.width(80),
                                   height: Dimension.width(80),
@@ -360,7 +361,7 @@ class _ProfileState extends State<Profile> {
                             Column(
                               children: [
                                 Text(
-                                  userInfo.totalBookings,
+                                  userInfo.totalBookings.toString(),
                                   style: TextStyle(
                                     fontSize: Dimension.font(20),
                                     fontWeight: FontWeight.w400,
@@ -391,7 +392,7 @@ class _ProfileState extends State<Profile> {
                             Column(
                               children: [
                                 Text(
-                                  userInfo.totalFavorites,
+                                  userInfo.totalFavorites.toString(),
                                   style: TextStyle(
                                     fontSize: Dimension.font(20),
                                     fontWeight: FontWeight.w400,
@@ -422,7 +423,7 @@ class _ProfileState extends State<Profile> {
                             Column(
                               children: [
                                 Text(
-                                  userInfo.totalReviews,
+                                  userInfo.totalReviews.toString(),
                                   style: TextStyle(
                                     fontSize: Dimension.font(20),
                                     fontWeight: FontWeight.w400,
@@ -660,6 +661,32 @@ class _ProfileState extends State<Profile> {
                 Colors.cyan,
                 'assets/icons/setting.png',
                 'Settings',
+              ),
+            ),
+          ),
+          // Loyalty Points
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const LoyaltyScreen()),
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.1),
+                    width: Dimension.height(1),
+                  ),
+                ),
+              ),
+              child: menuItems(
+                Colors.amber,
+                'assets/icons/setting.png', // reuse icon
+                'Loyalty Points',
               ),
             ),
           ),
