@@ -33,7 +33,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  // Handle login
+  // Handle login — pass username field to repository
   Future<void> _onLoginRequested(
     LoginRequested event,
     Emitter<AuthState> emit,
@@ -42,7 +42,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       final authResponse = await _authRepository.login(
-        email: event.email,
+        username: event.username,
         password: event.password,
       );
 
@@ -63,7 +63,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final authResponse = await _authRepository.register(
         email: event.email,
         password: event.password,
-        name: event.name,
+        username: event.username,
+        firstName: event.firstName,
+        lastName: event.lastName,
       );
 
       emit(Authenticated(authResponse));
@@ -126,14 +128,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             emit(const Unauthenticated());
           }
         } else {
-          // Token is valid and loaded, user is authenticated
-          // Create a minimal auth response (token already loaded in ApiService)
+          // Token is valid; construct a minimal placeholder model so the
+          // bloc state carries the correct type (real tokens are in ApiService)
           emit(
             Authenticated(
               AuthResponseModel(
-                tokenType: 'Bearer',
+                tokenType: 'bearer',
                 accessToken: 'loaded',
-                expiresIn: 3600,
                 refreshToken: 'loaded',
               ),
             ),

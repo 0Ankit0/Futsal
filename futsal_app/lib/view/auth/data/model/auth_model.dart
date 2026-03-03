@@ -1,36 +1,28 @@
+/// FastAPI Token response: {access, refresh, token_type}
 class AuthResponseModel {
   final String tokenType;
   final String accessToken;
-  final int expiresIn;
   final String refreshToken;
 
-  AuthResponseModel({
+  const AuthResponseModel({
     required this.tokenType,
     required this.accessToken,
-    required this.expiresIn,
     required this.refreshToken,
   });
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
     return AuthResponseModel(
-      tokenType: json['tokenType'] as String,
-      accessToken: json['accessToken'] as String,
-      expiresIn: json['expiresIn'] as int,
-      refreshToken: json['refreshToken'] as String,
+      tokenType: (json['token_type'] as String?) ?? 'bearer',
+      accessToken: json['access'] as String,
+      refreshToken: json['refresh'] as String,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'tokenType': tokenType,
-      'accessToken': accessToken,
-      'expiresIn': expiresIn,
-      'refreshToken': refreshToken,
+      'token_type': tokenType,
+      'access': accessToken,
+      'refresh': refreshToken,
     };
-  }
-
-  // Calculate expiry timestamp (current time + expiresIn seconds)
-  DateTime get expiryTime {
-    return DateTime.now().add(Duration(seconds: expiresIn));
   }
 }

@@ -4,6 +4,7 @@ import 'package:ui/view/auth/login.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'bloc/auth_bloc.dart';
 import 'bloc/auth_event.dart';
+import 'bloc/auth_state.dart';
 import '../../core/dimension.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -87,17 +88,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _completeRegistration() {
-    // Handle registration completion
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Registration Complete!')));
-    // Navigate to next screen or perform registration logic
+    final email = _emailController.text.trim();
+    // Derive a username from the email (part before @)
+    final username = email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    context.read<AuthBloc>().add(
+      RegisterRequested(
+        username: username,
+        email: email,
+        password: _passwordController.text,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     Dimension.init(context);
-    return Scaffold(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is Authenticated) {
+          Navigator.of(context).pop(); // back to login after register
+        } else if (state is AuthError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -837,6 +856,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       ),
-    );
+    ); // end BlocListener
   }
 }

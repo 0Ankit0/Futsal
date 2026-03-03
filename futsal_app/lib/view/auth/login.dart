@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/view/auth/register.dart';
 import 'package:ui/view/profile/bloc/profile_bloc.dart';
 import 'package:ui/view/profile/bloc/profile_event.dart';
+import 'package:ui/view/settings/forgot_password.dart';
 import '../../core/dimension.dart';
 import '../../core/app_theme.dart';
 import 'bloc/auth_bloc.dart';
@@ -27,14 +28,14 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
+              final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -44,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       // Trigger login event
       context.read<AuthBloc>().add(
         LoginRequested(
-          email: _emailController.text.trim(),
+          username: _usernameController.text.trim(),
           password: _passwordController.text,
         ),
       );
@@ -120,10 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             SizedBox(height: Dimension.height(30)),
-                            // Email Fieldmail Field
+                            // Username / Email Field
                             TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
+                              controller: _usernameController,
+                              keyboardType: TextInputType.text,
+                              autocorrect: false,
                               style: TextStyle(
                                 fontSize: Dimension.font(16),
                                 color: Colors.black,
@@ -131,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 letterSpacing: 0.2,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Email Address',
+                                labelText: 'Username or Email',
                                 labelStyle: TextStyle(
                                   color: AppTheme.textSecondary,
                                   fontSize: Dimension.font(14),
@@ -142,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontSize: Dimension.font(14),
                                   fontWeight: FontWeight.w600,
                                 ),
-                                hintText: 'your.email@example.com',
+                                hintText: 'username or email',
                                 hintStyle: TextStyle(
                                   color: Colors.grey[350],
                                   fontSize: Dimension.font(15),
@@ -152,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     right: Dimension.width(12),
                                   ),
                                   child: Icon(
-                                    Icons.email_outlined,
+                                    Icons.person_outline,
                                     color: AppTheme.textSecondary,
                                     size: Dimension.width(22),
                                   ),
@@ -205,13 +207,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter your username or email';
                                 }
-                                if (!RegExp(
-                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                ).hasMatch(value)) {
-                                  return 'Please enter a valid email';
+                                if (value.trim().length < 3) {
+                                  return 'Must be at least 3 characters';
                                 }
                                 return null;
                               },
@@ -381,7 +381,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    // Handle forgot password
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const ForgotPasswordScreen(),
+                                      ),
+                                    );
                                   },
                                   style: TextButton.styleFrom(
                                     padding: EdgeInsets.zero,

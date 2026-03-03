@@ -10,7 +10,7 @@ class ApiService {
   late Dio _dio;
   String? _token;
 
-  // Base URL - update this to your actual API base URL
+  // Base URL - loaded from ApiConst
   static const String baseUrl = ApiConst.baseUrl;
 
   // SharedPreferences keys
@@ -70,7 +70,7 @@ class ApiService {
                 // Call refresh endpoint
                 final refreshResponse = await _dio.post(
                   ApiConst.refresh,
-                  data: {'refreshToken': refreshToken},
+                  data: {'refresh': refreshToken}, // FastAPI expects 'refresh' key
                   options: Options(
                     headers: {
                       'Content-Type': 'application/json',
@@ -79,10 +79,11 @@ class ApiService {
                   ),
                 );
 
-                // Extract new access token
-                final newAccessToken = refreshResponse.data['accessToken'];
-                final newRefreshToken = refreshResponse.data['refreshToken'];
-                final expiresIn = refreshResponse.data['expiresIn'];
+                // Extract new access token (FastAPI returns {access, refresh, token_type})
+                final newAccessToken = refreshResponse.data['access'] as String;
+                final newRefreshToken = refreshResponse.data['refresh'] as String;
+                // FastAPI JWTs include expiry in the token itself; store 60-min TTL locally
+                const expiresIn = 3600;
 
                 // Save new tokens
                 await saveToken(newAccessToken);

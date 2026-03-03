@@ -3,14 +3,212 @@ import 'package:ui/core/service/api_service.dart';
 import 'package:ui/core/service/api_const.dart';
 import 'package:ui/view/auth/data/model/auth_model.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthRepository {
   final ApiService _apiService = ApiService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  // SharedPreferences keys
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _expiryTimeKey = 'expiry_time';
+
+  // ── Email / password login ──────────────────────────────────────────────────
+  /// FastAPI login accepts {username, password} — username may be an email too.
+  Future<AuthResponseModel> login({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final response = await _apiService.post(
+        ApiConst.login,
+        data: {'username': username, 'password': password},
+      );
+      final authResponse = AuthResponseModel.fromJson(response.data);
+      await _saveAuthData(authResponse);
+      return authResponse;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ── Native Google Sign-In (mobile only) ────────────────────────────────────
+  /// Uses google_sign_in to obtain a Google ID token, then exchanges it with
+  /// the backend's /auth/social/google/mobile endpoint for JWT tokens.
+  /// No Firebase dependency — the backend verifies the token directly.
+  Future<AuthResponseModel> loginWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        throw Exception('Google sign-in was cancelled');
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final String? idToken = googleAuth.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw Exception(
+          'Failed to obtain Google ID token. '
+          'Make sure OAuth client ID is configured correctly.',
+        );
+      }
+
+      // Exchange the Google ID token for our backend JWT tokens
+      final response = await _apiService.post(
+        ApiConst.mobileGoogleLogin,
+        data: {'id_token': idToken},
+      );
+
+      final authResponse = AuthResponseModel.fromJson(response.data);
+      await _saveAuthData(authResponse);
+      return authResponse;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ── Registration ────────────────────────────────────────────────────────────
+  Future<AuthResponseModel> register({
+    required String email,
+    required String password,
+    required String username,
+    String? firstName,
+    String? lastName,
+  }) async {
+    try {
+      final response = await _apiService.post(
+        ApiConst.signup,
+        data: {
+          'email': email,
+          'username': username,
+          'password': password,
+          'confirm_password': password,
+          if (firstName != null) 'first_name': firstName,
+          if (lastName != null) 'last_name': lastName,
+        },
+      );
+      final authResponse = AuthResponseModel.fromJson(response.data);
+      await _saveAuthData(authResponse);
+      return authResponse;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ── Token refresh ───────────────────────────────────────────────────────────
+  Future<AuthResponseModel> refreshToken() async {
+    try {
+      final storedRefresh = await _getRefreshToken();
+      if (storedRefresh == null) {
+        throw ApiException('No refresh token found');
+      }
+
+      final response = await _apiService.post(
+        ApiConst.refresh,
+        data: {'refresh': storedRefresh},
+      );
+
+      final authResponse = AuthResponseModel.fromJson(response.data);
+      await _saveAuthData(authResponse);
+      return authResponse;
+    } catch (e) {
+      await _clearAuthData();
+      rethrow;
+    }
+  }
+
+  // ── Logout ──────────────────────────────────────────────────────────────────
+  Future<void> logout() async {
+    try {
+      try {
+        await _apiService.post(ApiConst.logout);
+      } catch (_) {
+        // Ignore API errors during logout
+      }
+      // Sign out of Google if applicable
+      try {
+        await _googleSignIn.signOut();
+      } catch (_) {}
+      await _clearAuthData();
+    } catch (e) {
+      await _clearAuthData();
+      rethrow;
+    }
+  }
+
+  // ── Password reset ──────────────────────────────────────────────────────────
+  Future<void> requestPasswordReset(String email) async {
+    await _apiService.post(
+      ApiConst.passwordResetRequest,
+      data: {'email': email},
+    );
+  }
+
+  Future<void> confirmPasswordReset({
+    required String token,
+    required String newPassword,
+  }) async {
+    await _apiService.post(
+      ApiConst.passwordResetConfirm,
+      data: {
+        'token': token,
+        'new_password': newPassword,
+        'confirm_password': newPassword,
+      },
+    );
+  }
+
+  // ── Token helpers ───────────────────────────────────────────────────────────
+  Future<bool> isTokenExpired() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final expiryTimeString = prefs.getString(_expiryTimeKey);
+      if (expiryTimeString == null) return true;
+      final expiryTime = DateTime.parse(expiryTimeString);
+      return DateTime.now().isAfter(
+        expiryTime.subtract(const Duration(minutes: 1)),
+      );
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> ensureValidToken() async {
+    if (await isTokenExpired()) {
+      await refreshToken();
+    }
+  }
+
+  Future<String?> _getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  Future<void> _saveAuthData(AuthResponseModel auth) async {
+    final prefs = await SharedPreferences.getInstance();
+    await _apiService.saveToken(auth.accessToken);
+    await prefs.setString(_refreshTokenKey, auth.refreshToken);
+    // Store a 60-minute expiry (FastAPI access tokens are typically 60 min)
+    await prefs.setString(
+      _expiryTimeKey,
+      DateTime.now().add(const Duration(minutes: 55)).toIso8601String(),
+    );
+  }
+
+  Future<void> _clearAuthData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await _apiService.clearToken();
+    await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_expiryTimeKey);
+  }
+
+  Future<bool> isAuthenticated() async {
+    final hasToken = _apiService.isAuthenticated;
+    if (!hasToken) return false;
+    return !(await isTokenExpired());
+  }
+}
   // SharedPreferences keys
   static const String _refreshTokenKey = 'refresh_token';
   static const String _expiryTimeKey = 'expiry_time';
