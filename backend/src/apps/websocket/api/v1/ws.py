@@ -200,6 +200,16 @@ async def ws_room(
 
     Connects and immediately joins *room*.  Receives both room broadcasts
     and personal events.
+
+    **Slot availability rooms** — connect to ``ground:{id}`` to receive
+    real-time slot events emitted by the booking service:
+
+    | Event | Meaning |
+    |---|---|
+    | ``slot.locked``    | slot temporarily reserved (pending payment) |
+    | ``slot.booked``    | slot fully confirmed — no longer available |
+    | ``slot.available`` | slot freed (booking cancelled) |
+    | ``slot.completed`` | booking completed (slot usable next period) |
     """
     await _handle_connection(websocket, db, initial_room=room)
 

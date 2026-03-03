@@ -42,6 +42,36 @@ class BookingNotEligibleForCancelError(Exception):
     pass
 
 
+# ---------------------------------------------------------------------------
+# WebSocket helper — push slot-availability change to ground room
+# ---------------------------------------------------------------------------
+
+async def _push_slot_event(ground_id: int, event: str, booking: Booking) -> None:
+    """
+    Broadcast a slot-availability change event to everyone watching
+    the ground's live room (room name: ``ground:{ground_id}``).
+
+    Import is deferred to avoid circular imports at module load time.
+    Failures are swallowed so a WS error never breaks a booking transaction.
+    """
+    try:
+        from src.apps.websocket.manager import manager
+        await manager.push_event_to_room(
+            room=f"ground:{ground_id}",
+            event=event,
+            data={
+                "ground_id": ground_id,
+                "booking_id": booking.id,
+                "booking_date": str(booking.booking_date),
+                "start_time": str(booking.start_time),
+                "end_time": str(booking.end_time),
+                "status": booking.status.value,
+            },
+        )
+    except Exception:
+        pass  # WS failure must never roll back a booking transaction
+
+
 async def _check_slot_available(
     db: AsyncSession,
     ground_id: int,
@@ -198,6 +228,10 @@ async def create_booking(
 
     await db.commit()
     await db.refresh(booking)
+
+    # Notify clients watching this ground's room that a slot is now locked
+    await _push_slot_event(ground.id, "slot.locked", booking)
+
     return booking
 
 
@@ -243,6 +277,10 @@ async def confirm_booking(db: AsyncSession, booking: Booking) -> Booking:
             "booking_date": str(booking.booking_date),
         },
     )
+
+    # Notify room: slot is now fully confirmed/unavailable
+    await _push_slot_event(booking.ground_id, "slot.booked", booking)
+
     return booking
 
 
@@ -297,6 +335,10 @@ async def cancel_booking(
             "cancelled_by_owner": is_owner,
         },
     )
+
+    # Notify room: slot is now available again
+    await _push_slot_event(booking.ground_id, "slot.available", booking)
+
     return booking
 
 
@@ -307,4 +349,7 @@ async def complete_booking(db: AsyncSession, booking: Booking) -> Booking:
     db.add(booking)
     await db.commit()
     await db.refresh(booking)
+
+    await _push_slot_event(booking.ground_id, "slot.completed", booking)
+
     return booking
