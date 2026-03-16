@@ -17,7 +17,7 @@ namespace FutsalApi.UI.Shared.Services
 
         public async Task BookFutsal(BookingRequest bookingRequest)
         {
-            await _httpClient.PostAsJsonAsync(ApiRoutes.Booking.Base, bookingRequest);
+            await _httpClient.PostAsJsonAsync("Booking", bookingRequest);
         }
     }
 }

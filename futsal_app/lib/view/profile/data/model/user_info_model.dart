@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:ui/core/config/app_environment.dart';
 
 class UserInfoModel extends Equatable {
   final String id;
@@ -39,7 +40,7 @@ class UserInfoModel extends Equatable {
       return profileImageUrl;
     }
     // Otherwise prepend base URL
-    return 'http://144.126.252.228:8080$profileImageUrl';
+    return '${AppEnvironmentConfig.apiBaseUrl}${profileImageUrl!.replaceFirst(RegExp(r'^/+'), '')}';
   }
 
   factory UserInfoModel.fromJson(Map<String, dynamic> json) {

@@ -35,3 +35,20 @@ To deploy the application manually, you can follow these steps:
     ```bash
     docker-compose up -d
     ```
+
+## Environment Matrix
+
+The deployment process should keep base endpoint configuration synchronized across clients.
+
+| Environment | API Base Endpoint | Flutter runtime flags | Web appsettings source |
+| --- | --- | --- | --- |
+| Development | `http://localhost:5485/` | `--dart-define=APP_ENV=dev` (optional override: `API_BASE_URL`) | `appsettings.Development.json` |
+| Staging | `https://staging-api.futsalapp.com/` | `--dart-define=APP_ENV=staging` (optional override: `API_BASE_URL`) | `appsettings.Staging.json` |
+| Production | `https://api.futsalapp.com/` | `--dart-define=APP_ENV=prod` (optional override: `API_BASE_URL`) | `appsettings.json` |
+
+### Validation in deployed clients
+
+* Flutter startup logs print the selected environment and resolved API base URL.
+* Web startup logs print the selected `ApiEndpoints:ApiBaseUrl`.
+
+Verify these logs after each deploy to confirm the target environment is correctly configured.
