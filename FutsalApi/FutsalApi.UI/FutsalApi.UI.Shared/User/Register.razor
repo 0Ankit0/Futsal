@@ -1,6 +1,5 @@
 ﻿@page "/register"
-@using FutsalApi.Data.Models
-@using Auth
+@using FutsalApi.UI.Shared.Models
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
@@ -15,6 +14,21 @@
     <div class="mb-3">
         <label for="email">Email</label>
         <InputText id="email" @bind-Value="registerRequest.Email" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="firstName">First Name</label>
+        <InputText id="firstName" @bind-Value="registerRequest.FirstName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="lastName">Last Name</label>
+        <InputText id="lastName" @bind-Value="registerRequest.LastName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="userName">Username (optional)</label>
+        <InputText id="userName" @bind-Value="registerRequest.UserName" class="form-control" />
     </div>
 
     <div class="mb-3">
