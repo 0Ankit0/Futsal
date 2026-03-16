@@ -30,32 +30,16 @@
     <button type="submit" class="btn btn-primary">Submit</button>
 </EditForm>
 
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Components.Authorization
 @code {
     [Parameter]
     public int GroundId { get; set; }
 
-    private BookingRequest bookingRequest = new() { UserId = "" };
+    private BookingRequest bookingRequest = new();
 
-    [CascadingParameter]
-    private Task<AuthenticationState>? authenticationStateTask { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
         bookingRequest.GroundId = GroundId;
-
-        if (authenticationStateTask != null)
-        {
-            var authState = await authenticationStateTask;
-            var user = authState?.User;
-
-            if (user?.Identity?.IsAuthenticated == true)
-            {
-                // Assuming UserId is a string and can be parsed from a claim
-                bookingRequest.UserId = user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-            }
-        }
+        return Task.CompletedTask;
     }
 
     private async Task HandleValidSubmit()

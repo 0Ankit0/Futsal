@@ -268,10 +268,17 @@ public class BookingApiEndpoints : IEndpoint
         [FromServices] IBookingRepository repository,
         [FromServices] IGroundClosureRepository groundClosureRepository,
         [FromServices] IFutsalGroundRepository groundRepository,
+        ClaimsPrincipal claimsPrincipal,
+        [FromServices] UserManager<User> userManager,
         [FromBody] BookingRequest bookingRequest)
     {
         try
         {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.Problem("User not found.", statusCode: StatusCodes.Status404NotFound);
+            }
+
             if (await groundClosureRepository.IsGroundClosedAsync(bookingRequest.GroundId, bookingRequest.BookingDate, bookingRequest.StartTime, bookingRequest.EndTime))
             {
                 return TypedResults.Problem("The selected time slot is closed for booking.", statusCode: StatusCodes.Status400BadRequest);
@@ -295,7 +302,7 @@ public class BookingApiEndpoints : IEndpoint
 
             Booking booking = new Booking
             {
-                UserId = bookingRequest.UserId,
+                UserId = user.Id,
                 GroundId = bookingRequest.GroundId,
                 BookingDate = bookingRequest.BookingDate,
                 StartTime = bookingRequest.StartTime,

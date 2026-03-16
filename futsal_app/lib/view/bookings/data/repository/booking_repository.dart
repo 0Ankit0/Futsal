@@ -56,7 +56,6 @@ class BookingRepository {
 
   /// Create a new booking
   Future<void> createBooking({
-    required String userId,
     required int groundId,
     required DateTime bookingDate,
     required String startTime,
@@ -64,7 +63,6 @@ class BookingRepository {
   }) async {
     try {
       final bookingData = {
-        'userId': userId,
         'groundId': groundId,
         'bookingDate': bookingDate.toIso8601String(),
         'startTime': startTime,

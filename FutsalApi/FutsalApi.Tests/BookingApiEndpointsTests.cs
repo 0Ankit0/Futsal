@@ -1,7 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Security.Claims;
 using FutsalApi.Data.Models;
-using FutsalApi.ApiService.Repositories;
 using FutsalApi.ApiService.Routes;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +8,6 @@ using Moq;
 using FluentAssertions;
 using FutsalApi.ApiService.Repositories.Interfaces;
 using FutsalApi.Data.DTO;
-using FutsalApi.Data.Models;
 
 namespace FutsalApi.Tests;
 
@@ -107,10 +105,13 @@ public class BookingApiEndpointsTests
     public async Task CreateBooking_ReturnsOk_WhenBookingIsCreated()
     {
         // Arrange
+        var user = new User { Id = "user1" };
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+
         var now = DateTime.UtcNow.TimeOfDay;
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = now.Add(TimeSpan.FromHours(1)),
@@ -153,6 +154,8 @@ public class BookingApiEndpointsTests
             _bookingRepositoryMock.Object,
             _groundClosureRepositoryMock.Object,
             _groundRepositoryMock.Object,
+            claimsPrincipal,
+            _userManagerMock.Object,
             bookingRequest);
 
         // Assert
@@ -167,9 +170,12 @@ public class BookingApiEndpointsTests
     public async Task CreateBooking_ReturnsProblem_WhenGroundNotFound()
     {
         // Arrange
+        var user = new User { Id = "user1" };
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
@@ -189,6 +195,8 @@ public class BookingApiEndpointsTests
             _bookingRepositoryMock.Object,
             _groundClosureRepositoryMock.Object,
             _groundRepositoryMock.Object,
+            claimsPrincipal,
+            _userManagerMock.Object,
             bookingRequest);
 
         // Assert
@@ -203,9 +211,12 @@ public class BookingApiEndpointsTests
     public async Task CreateBooking_ReturnsProblem_WhenSlotClosed()
     {
         // Arrange
+        var user = new User { Id = "user1" };
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
@@ -221,6 +232,8 @@ public class BookingApiEndpointsTests
             _bookingRepositoryMock.Object,
             _groundClosureRepositoryMock.Object,
             _groundRepositoryMock.Object,
+            claimsPrincipal,
+            _userManagerMock.Object,
             bookingRequest);
 
         // Assert
@@ -235,10 +248,12 @@ public class BookingApiEndpointsTests
     public async Task CreateBooking_ThrowsException_WhenCalledWithoutBookingRequest()
     {
         // Arrange
-        // All dependencies are mocked, but bookingRequest is missing on purpose to test compile error fix
+        var user = new User { Id = "user1" };
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
@@ -247,8 +262,95 @@ public class BookingApiEndpointsTests
 
         // Act & Assert
         // This test is just to ensure the method is always called with bookingRequest
-        var result = await _endpoints.CreateBooking(_bookingRepositoryMock.Object, _groundClosureRepositoryMock.Object, _groundRepositoryMock.Object, bookingRequest);
+        var result = await _endpoints.CreateBooking(_bookingRepositoryMock.Object, _groundClosureRepositoryMock.Object, _groundRepositoryMock.Object, claimsPrincipal, _userManagerMock.Object, bookingRequest);
         result.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CreateBooking_UsesAuthenticatedUserId_IgnoresPayloadUserId()
+    {
+        // Arrange
+        var user = new User { Id = "auth-user" };
+        var claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[] { new Claim(ClaimTypes.NameIdentifier, user.Id) }));
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync(user);
+
+        var now = DateTime.UtcNow.TimeOfDay;
+        var bookingRequest = new BookingRequest
+        {
+            GroundId = 1,
+            BookingDate = DateTime.Today,
+            StartTime = now.Add(TimeSpan.FromHours(1)),
+            EndTime = now.Add(TimeSpan.FromHours(2))
+        };
+
+        var ground = new FutsalGroundResponse
+        {
+            Id = 1,
+            Name = "Ground 1",
+            Location = "Location 1",
+            OwnerId = "Owner1",
+            PricePerHour = 200,
+            OpenTime = now.Subtract(TimeSpan.FromHours(2)),
+            CloseTime = now.Add(TimeSpan.FromHours(6)),
+        };
+
+        _groundClosureRepositoryMock
+            .Setup(r => r.IsGroundClosedAsync(bookingRequest.GroundId, bookingRequest.BookingDate, bookingRequest.StartTime, bookingRequest.EndTime))
+            .ReturnsAsync(false);
+
+        _groundRepositoryMock
+            .Setup(r => r.GetByIdAsync(It.IsAny<Expression<Func<FutsalGround, bool>>>() ))
+            .ReturnsAsync(ground);
+
+        Booking? capturedBooking = null;
+        _bookingRepositoryMock
+            .Setup(r => r.CreateBookingAsync(It.IsAny<Booking>()))
+            .Callback<Booking>(b => capturedBooking = b)
+            .ReturnsAsync(1);
+
+        // Act
+        var result = await _endpoints.CreateBooking(
+            _bookingRepositoryMock.Object,
+            _groundClosureRepositoryMock.Object,
+            _groundRepositoryMock.Object,
+            claimsPrincipal,
+            _userManagerMock.Object,
+            bookingRequest);
+
+        // Assert
+        result.Result.Should().BeOfType<Ok<string>>();
+        capturedBooking.Should().NotBeNull();
+        capturedBooking!.UserId.Should().Be("auth-user");
+    }
+
+    [Fact]
+    public async Task CreateBooking_ReturnsProblem_WhenAuthenticatedUserNotFound()
+    {
+        // Arrange
+        var claimsPrincipal = new ClaimsPrincipal();
+        _userManagerMock.Setup(um => um.GetUserAsync(claimsPrincipal)).ReturnsAsync((User?)null);
+
+        var bookingRequest = new BookingRequest
+        {
+            GroundId = 1,
+            BookingDate = DateTime.Today,
+            StartTime = TimeSpan.FromHours(10),
+            EndTime = TimeSpan.FromHours(12)
+        };
+
+        // Act
+        var result = await _endpoints.CreateBooking(
+            _bookingRepositoryMock.Object,
+            _groundClosureRepositoryMock.Object,
+            _groundRepositoryMock.Object,
+            claimsPrincipal,
+            _userManagerMock.Object,
+            bookingRequest);
+
+        // Assert
+        result.Result.Should().BeOfType<ProblemHttpResult>();
+        var problem = result.Result as ProblemHttpResult;
+        problem!.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 
     [Fact]
@@ -257,7 +359,6 @@ public class BookingApiEndpointsTests
         // Arrange
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
@@ -288,7 +389,6 @@ public class BookingApiEndpointsTests
         // Arrange
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
@@ -312,7 +412,6 @@ public class BookingApiEndpointsTests
         // Arrange
         var bookingRequest = new BookingRequest
         {
-            UserId = "user1",
             GroundId = 1,
             BookingDate = DateTime.Today,
             StartTime = TimeSpan.FromHours(10),
