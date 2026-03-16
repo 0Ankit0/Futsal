@@ -16,13 +16,13 @@ namespace FutsalApi.UI.Shared.Services
 
         public async Task<bool> Login(LoginRequest loginRequest)
         {
-            var response = await _httpClient.PostAsJsonAsync("/login", loginRequest);
+            var response = await _httpClient.PostAsJsonAsync("User/login", loginRequest);
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> Register(RegisterRequest registerRequest)
         {
-            var response = await _httpClient.PostAsJsonAsync("/register", registerRequest);
+            var response = await _httpClient.PostAsJsonAsync("User/register", registerRequest);
             return response.IsSuccessStatusCode;
         }
     }

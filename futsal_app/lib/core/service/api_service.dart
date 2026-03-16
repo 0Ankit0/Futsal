@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ui/core/service/api_const.dart';
+import 'package:ui/core/config/app_environment.dart';
 import 'dart:developer' as developer;
 
 class ApiService {
@@ -10,8 +11,7 @@ class ApiService {
   late Dio _dio;
   String? _token;
 
-  // Base URL - update this to your actual API base URL
-  static const String baseUrl = ApiConst.baseUrl;
+  static String get baseUrl => AppEnvironmentConfig.apiBaseUrl;
 
   // SharedPreferences keys
   static const String _tokenKey = 'auth_token';
@@ -35,6 +35,11 @@ class ApiService {
           'Accept': 'application/json',
         },
       ),
+    );
+
+    developer.log(
+      'ApiService initialized with baseUrl=$baseUrl',
+      name: 'ApiService',
     );
 
     // Add interceptor for token management and logging

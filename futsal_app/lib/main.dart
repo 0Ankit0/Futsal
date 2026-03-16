@@ -18,9 +18,12 @@ import 'package:provider/provider.dart';
 import 'package:ui/core/service/api_service.dart';
 import 'package:ui/core/service/notification_service.dart';
 import 'package:ui/core/service/fcm_service.dart';
+import 'package:ui/core/config/app_environment.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  AppEnvironmentConfig.logSelectedEnvironment();
 
   // Initialize ApiService and load saved token
   await ApiService().init();

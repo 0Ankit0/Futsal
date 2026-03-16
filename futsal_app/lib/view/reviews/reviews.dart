@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:ui/core/dimension.dart';
 import 'package:ui/core/service/api_const.dart';
+import 'package:ui/core/config/app_environment.dart';
 import 'package:ui/view/reviews/bloc/reviews_bloc.dart';
 import 'package:ui/view/reviews/data/model/reviews_model.dart';
 import 'package:ui/view/reviews/data/repository/reviews_repository.dart';
@@ -124,7 +125,7 @@ class ReviewCard extends StatelessWidget {
                   radius: Dimension.width(20),
                   backgroundImage: review.userImageId != null
                       ? NetworkImage(
-                          '${ApiConst.baseUrl}images/${review.userImageId}',
+                          '${AppEnvironmentConfig.apiBaseUrl}images/${review.userImageId}',
                         )
                       : null,
                   child: review.userImageId == null
@@ -197,7 +198,7 @@ class ReviewCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(Dimension.width(8)),
                 child: Image.network(
-                  '${ApiConst.baseUrl}${review.reviewImageUrl}',
+                  '${AppEnvironmentConfig.apiBaseUrl}${review.reviewImageUrl}',
                   height: Dimension.height(150),
                   width: double.infinity,
                   fit: BoxFit.cover,

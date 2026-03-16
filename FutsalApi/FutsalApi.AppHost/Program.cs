@@ -16,11 +16,11 @@ var apiService = builder.AddProject<Projects.FutsalApi_ApiService>("apiservice")
     .WithReference(cache)
     .WaitFor(cache);
 
-//var web = builder.AddProject<Projects.FutsalApi_UI_Web>("web")
-//    .WithExternalHttpEndpoints()
-//    .WithReference(apiService)
-//    .WaitFor(apiService)
-//    .WithReference(cache)
-//    .WaitFor(cache);
+var web = builder.AddProject<Projects.FutsalApi_UI_Web>("web")
+    .WithExternalHttpEndpoints()
+    .WithReference(apiService)
+    .WaitFor(apiService)
+    .WithReference(cache)
+    .WaitFor(cache);
 
 builder.Build().Run();
