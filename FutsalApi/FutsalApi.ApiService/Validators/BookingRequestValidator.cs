@@ -10,7 +10,6 @@ public class BookingRequestValidator : AbstractValidator<BookingRequest>
 {
     public BookingRequestValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty().WithMessage("User ID is required");
         RuleFor(x => x.GroundId).NotEmpty().WithMessage("Ground ID is required");
         RuleFor(x => x.BookingDate).GreaterThanOrEqualTo(DateTime.UtcNow.Date)
             .WithMessage("Booking date cannot be in the past");

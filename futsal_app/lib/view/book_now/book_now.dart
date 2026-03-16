@@ -123,7 +123,6 @@ class _BookNowState extends State<BookNow> {
         throw Exception('User profile not loaded');
       }
 
-      final userId = profileState.userInfo.id;
       final groundId = widget.futsalData['_id'] ?? widget.futsalData['id'];
       final selectedDate = _generateNext7Days()[_selectedDateIndex];
 
@@ -138,7 +137,6 @@ class _BookNowState extends State<BookNow> {
       final endTime = _convertTo24HourFormat(times[1]);
 
       await _bookingRepo.createBooking(
-        userId: userId,
         groundId: groundId is int
             ? groundId
             : int.tryParse(groundId.toString()) ?? 0,
