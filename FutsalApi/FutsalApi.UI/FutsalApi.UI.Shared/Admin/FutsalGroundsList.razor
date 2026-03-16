@@ -30,7 +30,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>("FutsalGround");
+        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>(ApiRoutes.FutsalGround.Base);
     }
 
     void EditGround(int groundId)
@@ -40,7 +40,7 @@ else
 
     async Task DeleteGround(int groundId)
     {
-        await Http.DeleteAsync($"FutsalGround/{groundId}");
-        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>("FutsalGround");
+        await Http.DeleteAsync(ApiRoutes.FutsalGround.ById(groundId));
+        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>(ApiRoutes.FutsalGround.Base);
     }
 }

@@ -36,7 +36,7 @@
     private async Task HandleValidSubmit()
     {
         notificationList.UserIds = userIdsInput.Split(',').Select(id => id.Trim()).ToList();
-        await Http.PostAsJsonAsync("Notifications/Send", notificationList);
+        await Http.PostAsJsonAsync(ApiRoutes.Notifications.Send, notificationList);
         // Display success message
     }
 }

@@ -35,12 +35,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        bookings = await Http.GetFromJsonAsync<BookingResponse[]>("Booking");
+        bookings = await Http.GetFromJsonAsync<BookingResponse[]>(ApiRoutes.Booking.Base);
     }
 
     async Task CancelBooking(int bookingId)
     {
-        await Http.PatchAsync($"Booking/cancel/{bookingId}", null);
-        bookings = await Http.GetFromJsonAsync<BookingResponse[]>("Booking");
+        await Http.PatchAsync(ApiRoutes.Booking.Cancel(bookingId), null);
+        bookings = await Http.GetFromJsonAsync<BookingResponse[]>(ApiRoutes.Booking.Base);
     }
 }

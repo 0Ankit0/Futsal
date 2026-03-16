@@ -51,13 +51,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        users = await Http.GetFromJsonAsync<List<InfoResponse>>("User/info");
-        roles = await Http.GetFromJsonAsync<List<Role>>("Roles");
+        users = await Http.GetFromJsonAsync<List<InfoResponse>>(ApiRoutes.User.ManageInfo);
+        roles = await Http.GetFromJsonAsync<List<Role>>(ApiRoutes.Roles.Base);
     }
 
     private async Task HandleValidSubmit()
     {
-        var result = await Http.PostAsJsonAsync("UserRoles", userRole);
+        var result = await Http.PostAsJsonAsync(ApiRoutes.UserRoles.Base, userRole);
         if (result.IsSuccessStatusCode)
         {
             NavigationManager.NavigateTo("/admin/user-roles");

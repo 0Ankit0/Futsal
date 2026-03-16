@@ -30,7 +30,7 @@
 
     private async Task HandleValidSubmit()
     {
-        var result = await Http.PostAsJsonAsync("User/verifyResetCode", verifyRequest);
+        var result = await Http.PostAsJsonAsync(ApiRoutes.User.VerifyResetCode, verifyRequest);
         if (result.IsSuccessStatusCode)
         {
             // Code is valid, navigate to reset password page with email and code

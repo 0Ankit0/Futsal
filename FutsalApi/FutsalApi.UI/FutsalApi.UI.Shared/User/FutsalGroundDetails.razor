@@ -40,7 +40,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        futsalGround = await Http.GetFromJsonAsync<FutsalGroundResponse>($"FutsalGround/{Id}");
+        futsalGround = await Http.GetFromJsonAsync<FutsalGroundResponse>(ApiRoutes.FutsalGround.ById(Id));
     }
 
     private void BookNow(int groundId)

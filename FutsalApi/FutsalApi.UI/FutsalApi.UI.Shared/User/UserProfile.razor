@@ -33,7 +33,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var response = await Http.GetFromJsonAsync<InfoResponse>("User/info");
+        var response = await Http.GetFromJsonAsync<InfoResponse>(ApiRoutes.User.ManageInfo);
         if (response != null)
         {
             infoRequest.NewEmail = response.Email;
@@ -42,6 +42,6 @@
 
     private async Task HandleValidSubmit()
     {
-        await Http.PostAsJsonAsync("User/info", infoRequest);
+        await Http.PostAsJsonAsync(ApiRoutes.User.ManageInfo, infoRequest);
     }
 }

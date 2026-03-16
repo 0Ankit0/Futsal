@@ -24,6 +24,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        userRoles = await Http.GetFromJsonAsync<UserRole[]>("UserRoles");
+        userRoles = await Http.GetFromJsonAsync<UserRole[]>(ApiRoutes.UserRoles.Base);
     }
 }

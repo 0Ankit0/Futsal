@@ -75,7 +75,7 @@ else
 
     private async Task LoadFutsalGrounds()
     {
-        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>("FutsalGround");
+        futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>(ApiRoutes.FutsalGround.Base);
     }
 
     private async Task SearchFutsalGrounds()
@@ -98,7 +98,7 @@ else
             queryParams.Add($"maxRating={maxRating.Value}");
         
         var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
-        var url = $"FutsalGround/search{queryString}";
+        var url = $"{ApiRoutes.FutsalGround.Search}{queryString}";
         
         futsalGrounds = await Http.GetFromJsonAsync<FutsalGroundResponse[]>(url);
     }
