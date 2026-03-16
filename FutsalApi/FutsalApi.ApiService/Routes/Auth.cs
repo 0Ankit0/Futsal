@@ -3,6 +3,7 @@
 
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Text;
@@ -269,16 +270,22 @@ public class AuthApiEndpointRouteBuilderExtensions
         }
         var userStore = sp.GetRequiredService<IUserStore<User>>();
         var emailStore = (IUserEmailStore<User>)userStore;
-        var email = registration.Email;
-        var username = string.IsNullOrWhiteSpace(registration.UserName) ? registration.Email : registration.UserName;
+        var validationErrors = ValidateRegisterRequest(registration);
+        if (validationErrors is not null)
+        {
+            return TypedResults.ValidationProblem(validationErrors);
+        }
+
+        var email = registration.Email.Trim();
+        var username = string.IsNullOrWhiteSpace(registration.UserName) ? email : registration.UserName.Trim();
         if (string.IsNullOrEmpty(email) || !_emailAddressAttribute.IsValid(email))
         {
             return CreateValidationProblem(IdentityResult.Failed(userManager.ErrorDescriber.InvalidEmail(email)));
         }
         var user = new User
         {
-            FirstName = registration.FirstName,
-            LastName = registration.LastName
+            FirstName = registration.FirstName.Trim(),
+            LastName = registration.LastName.Trim()
         };
         await userStore.SetUserNameAsync(user, username, CancellationToken.None);
         await emailStore.SetEmailAsync(user, email, CancellationToken.None);
@@ -289,6 +296,26 @@ public class AuthApiEndpointRouteBuilderExtensions
         }
         await SendConfirmationEmailAsync(user, userManager, context, email, confirmEmailEndpointName, linkGenerator, emailSender);
         return TypedResults.Ok();
+    }
+
+    private static Dictionary<string, string[]>? ValidateRegisterRequest(RegisterRequest registration)
+    {
+        var validationContext = new ValidationContext(registration);
+        var validationResults = new List<ValidationResult>();
+        var isValid = Validator.TryValidateObject(registration, validationContext, validationResults, true);
+
+        if (!isValid)
+        {
+            return validationResults
+                .SelectMany(result => result.MemberNames.DefaultIfEmpty(string.Empty)
+                    .Select(memberName => new { memberName, result.ErrorMessage }))
+                .GroupBy(x => x.memberName)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(x => x.ErrorMessage ?? "The field is invalid.").ToArray());
+        }
+
+        return null;
     }
 
 
