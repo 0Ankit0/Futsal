@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ui/core/simple_theme.dart';
 import '../../core/dimension.dart';
 import '../../core/service/notification_service.dart';
+import 'bloc/bookings_bloc.dart';
 import 'data/repository/booking_repository.dart';
 import 'data/model/booking.dart';
 import 'widgets/review_dialog.dart';
@@ -18,105 +19,127 @@ class BookingsScreen extends StatefulWidget {
 
 class _BookingsScreenState extends State<BookingsScreen>
     with SingleTickerProviderStateMixin {
-  final _repo = BookingRepository();
-  late Future<List<Booking>> _future;
   late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _future = _repo.getBookings();
-  }
-
-  Future<void> _refresh() async {
-    setState(() {
-      _future = _repo.getBookings();
-    });
-    await _future;
   }
 
   @override
   Widget build(BuildContext context) {
     Dimension.init(context);
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(Dimension.height(70)),
-        child: Container(
-          width: double.infinity,
+    return BlocProvider(
+      create: (_) =>
+          BookingsBloc(bookingRepository: BookingRepository())
+            ..add(const LoadBookings()),
+      child: BlocListener<BookingsBloc, BookingsState>(
+        listenWhen: (previous, current) =>
+            previous.errorMessage != current.errorMessage ||
+            previous.infoMessage != current.infoMessage,
+        listener: (context, state) {
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.errorMessage!)),
+            );
+          }
 
-          padding: EdgeInsets.symmetric(
-            horizontal: Dimension.width(20),
-            vertical: Dimension.height(20),
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(
-                  context,
-                ).colorScheme.outline.withValues(alpha: 0.1),
-                width: 1,
+          if (state.infoMessage != null) {
+            if (state.lastActionType == BookingActionType.cancelled &&
+                state.actionBooking != null) {
+              NotificationService().showBookingCancelled(
+                groundName: state.actionBooking!.groundName,
+                bookingDate: _prettyDate(state.actionBooking!.bookingDate),
+              );
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.infoMessage!)),
+            );
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(Dimension.height(70)),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: Dimension.width(20),
+                vertical: Dimension.height(20),
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Column(
+                children: [
+                  SizedBox(height: Dimension.height(25)),
+                  Row(
+                    children: [
+                      Text(
+                        'My Bookings',
+                        style: TextStyle(
+                          fontSize: Dimension.font(20),
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
-          child: Column(
+          body: Column(
             children: [
-              SizedBox(height: Dimension.height(25)),
-              Row(
-                children: [
-                  Text(
-                    'My Bookings',
-                    style: TextStyle(
-                      fontSize: Dimension.font(20),
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: TabBar(
+                  overlayColor: WidgetStateProperty.all(Colors.transparent),
+                  controller: _tabController,
+                  splashBorderRadius: null,
+                  splashFactory: null,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicatorPadding: EdgeInsets.symmetric(
+                    horizontal: Dimension.width(10),
                   ),
-                ],
+                  tabs: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: Dimension.height(15),
+                      ),
+                      child: Text('Upcoming'),
+                    ),
+                    Text('Completed'),
+                    Text('Cancelled'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(top: Dimension.height(8)),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildBookingList(0),
+                      _buildBookingList(1),
+                      _buildBookingList(2),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Theme.of(context).colorScheme.surface,
-            child: TabBar(
-              overlayColor: WidgetStateProperty.all(Colors.transparent),
-              controller: _tabController,
-              splashBorderRadius: null,
-              splashFactory: null,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicatorPadding: EdgeInsets.symmetric(
-                horizontal: Dimension.width(10),
-              ),
-              tabs: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: Dimension.height(15)),
-                  child: Text('Upcoming'),
-                ),
-                Text('Completed'),
-                Text('Cancelled'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(top: Dimension.height(8)),
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildBookingList(0),
-                  _buildBookingList(1),
-                  _buildBookingList(2),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -128,45 +151,49 @@ class _BookingsScreenState extends State<BookingsScreen>
   }
 
   Widget _buildBookingList(int statusFilter) {
-    return FutureBuilder<List<Booking>>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
+    return BlocBuilder<BookingsBloc, BookingsState>(
+      builder: (context, state) {
+        if (state.isLoading && state.bookings.isEmpty) {
           return _LoadingList();
         }
-        if (snap.hasError) {
-          return _ErrorView(message: snap.error.toString(), onRetry: _refresh);
+
+        if (state.errorMessage != null && state.bookings.isEmpty) {
+          return _ErrorView(
+            message: state.errorMessage!,
+            onRetry: () => context.read<BookingsBloc>().add(const LoadBookings()),
+          );
         }
-        final data = snap.data ?? [];
+
         final now = DateTime.now();
         List<Booking> filtered;
 
         if (statusFilter == 0) {
-          // Upcoming: bookingDate is today or future AND status is 0 (pending) or 1 (confirmed)
-          filtered = data
+          filtered = state.bookings
               .where(
                 (b) =>
-                    (b.bookingDate.isAfter(now) ||
-                        _sameDay(b.bookingDate, now)) &&
+                    (b.bookingDate.isAfter(now) || _sameDay(b.bookingDate, now)) &&
                     (b.status == 0 || b.status == 1),
               )
               .toList();
         } else if (statusFilter == 1) {
-          // Completed tab: show bookings with status 3 (Completed)
-          filtered = data.where((b) => b.status == 3).toList();
+          filtered = state.bookings.where((b) => b.status == 3).toList();
         } else {
-          // Cancelled tab: show bookings with status 2 (Cancelled)
-          filtered = data.where((b) => b.status == 2).toList();
+          filtered = state.bookings.where((b) => b.status == 2).toList();
         }
 
         filtered.sort((a, b) => b.bookingDate.compareTo(a.bookingDate));
 
         if (filtered.isEmpty) {
-          return _EmptyView(statusFilter: statusFilter, onRefresh: _refresh);
+          return _EmptyView(
+            statusFilter: statusFilter,
+            onRefresh: () => context.read<BookingsBloc>().add(const LoadBookings()),
+          );
         }
 
         return RefreshIndicator(
-          onRefresh: _refresh,
+          onRefresh: () async {
+            context.read<BookingsBloc>().add(const LoadBookings());
+          },
           child: ListView.separated(
             padding: EdgeInsets.fromLTRB(
               Dimension.width(16),
@@ -177,9 +204,14 @@ class _BookingsScreenState extends State<BookingsScreen>
             itemCount: filtered.length,
             separatorBuilder: (_, __) => SizedBox(height: Dimension.height(12)),
             itemBuilder: (context, i) {
+              final booking = filtered[i];
               return _BookingCard(
-                booking: filtered[i],
+                booking: booking,
                 isUpcoming: statusFilter == 0,
+                isProcessing: state.processingBookingId == booking.id,
+                onCancel: () => context.read<BookingsBloc>().add(
+                  CancelBookingRequested(booking),
+                ),
               );
             },
           ),
@@ -195,7 +227,15 @@ class _BookingsScreenState extends State<BookingsScreen>
 class _BookingCard extends StatefulWidget {
   final Booking booking;
   final bool isUpcoming;
-  const _BookingCard({required this.booking, this.isUpcoming = false});
+  final bool isProcessing;
+  final VoidCallback onCancel;
+
+  const _BookingCard({
+    required this.booking,
+    this.isUpcoming = false,
+    required this.isProcessing,
+    required this.onCancel,
+  });
 
   @override
   State<_BookingCard> createState() => _BookingCardState();
@@ -203,26 +243,6 @@ class _BookingCard extends StatefulWidget {
 
 class _BookingCardState extends State<_BookingCard> {
   final _reviewRepo = ReviewsRepository();
-
-  String _prettyDate(DateTime d) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final m = months[d.month - 1];
-    return '$m ${d.day}, ${d.year}';
-  }
-  // Removed unused helper
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +315,6 @@ class _BookingCardState extends State<_BookingCard> {
               ),
             ],
           ),
-          // SizedBox(height: Dimension.height(12)),
           Row(
             children: [
               Image.asset(
@@ -344,9 +363,11 @@ class _BookingCardState extends State<_BookingCard> {
                 ],
               ),
               if (widget.isUpcoming) ...[
-                Spacer(),
+                const Spacer(),
                 ElevatedButton(
-                  onPressed: () => _showCancelDialog(context, widget.booking),
+                  onPressed: widget.isProcessing
+                      ? null
+                      : () => _showCancelDialog(context, widget.booking),
                   style: ButtonStyle(
                     backgroundColor: WidgetStateProperty.all(
                       context.read<ThemeNotifier>().isDark
@@ -366,63 +387,25 @@ class _BookingCardState extends State<_BookingCard> {
                       ),
                     ),
                   ),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: Dimension.font(14),
-                      color: Theme.of(context).colorScheme.onPrimary,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                  child: widget.isProcessing
+                      ? SizedBox(
+                          width: Dimension.width(16),
+                          height: Dimension.width(16),
+                          child: const CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: Dimension.font(14),
+                            color: Theme.of(context).colorScheme.onPrimary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                 ),
-                // SizedBox(width: Dimension.width(8)),
-                // ElevatedButton(
-                //   onPressed: () {
-                //     // Navigate to futsal details with groundId
-                //     Navigator.push(
-                //       context,
-                //       MaterialPageRoute(
-                //         builder: (context) => FutsalDetails(
-                //           futsalData: {
-                //             'id': booking.groundId,
-                //             'name': booking.groundName,
-                //           },
-                //         ),
-                //       ),
-                //     );
-                //   },
-                //   style: ButtonStyle(
-                //     backgroundColor: WidgetStateProperty.all(
-                //       Theme.of(context).colorScheme.primary,
-                //     ),
-                //     shadowColor: WidgetStateProperty.all(Colors.transparent),
-                //     padding: WidgetStateProperty.all(
-                //       EdgeInsets.symmetric(
-                //         horizontal: Dimension.width(12),
-                //         vertical: Dimension.height(0),
-                //       ),
-                //     ),
-                //     shape: WidgetStateProperty.all(
-                //       RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(Dimension.width(8)),
-                //       ),
-                //     ),
-                //   ),
-                //   child: Text(
-                //     'View Details',
-                //     style: TextStyle(
-                //       fontSize: Dimension.font(14),
-                //       color: Colors.white,
-                //       fontWeight: FontWeight.w400,
-                //     ),
-                //   ),
-                // ),
               ],
-              // Show review button for completed (status 3) or cancelled (status 2) bookings only
               if (!widget.isUpcoming &&
-                  (widget.booking.status == 3 ||
-                      widget.booking.status == 2)) ...[
-                Spacer(),
+                  (widget.booking.status == 3 || widget.booking.status == 2)) ...[
+                const Spacer(),
                 ElevatedButton(
                   onPressed: () => _showReviewDialog(context),
                   style: ButtonStyle(
@@ -524,20 +507,7 @@ class _BookingCardState extends State<_BookingCard> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
-
-              // Show cancellation notification
-              NotificationService().showBookingCancelled(
-                groundName: booking.groundName,
-                bookingDate: _prettyDate(booking.bookingDate),
-              );
-
-              // TODO: Implement cancel booking logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Booking cancelled'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              widget.onCancel();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -561,15 +531,28 @@ class _BookingCardState extends State<_BookingCard> {
   }
 }
 
-// Time formatting helper: accepts
-//  - 24h with seconds: HH:mm:ss (e.g. 13:00:00)
-//  - 24h without seconds: HH:mm (e.g. 13:00)
-//  - 12h with period: h:mm AM/PM (e.g. 1:00 PM)
-// Returns 12h format: HH:mm AM/PM (leading zero hour)
+String _prettyDate(DateTime d) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final m = months[d.month - 1];
+  return '$m ${d.day}, ${d.year}';
+}
+
 String _friendlyTime(String raw) {
   final trimmed = raw.trim();
 
-  // 24h with seconds
   final secMatch = RegExp(r'^(\d{2}):(\d{2}):(\d{2})$').firstMatch(trimmed);
   if (secMatch != null) {
     final h = int.parse(secMatch.group(1)!);
@@ -580,7 +563,6 @@ String _friendlyTime(String raw) {
     return '${h12.toString().padLeft(2, '0')}:$m $period';
   }
 
-  // 24h without seconds
   final noSecMatch = RegExp(r'^(\d{2}):(\d{2})$').firstMatch(trimmed);
   if (noSecMatch != null) {
     final h = int.parse(noSecMatch.group(1)!);
@@ -591,7 +573,6 @@ String _friendlyTime(String raw) {
     return '${h12.toString().padLeft(2, '0')}:$m $period';
   }
 
-  // 12h already (normalize hour padding & period case)
   final ampmMatch = RegExp(
     r'^(\d{1,2}):(\d{2})\s*(AM|PM)$',
     caseSensitive: false,
@@ -605,7 +586,7 @@ String _friendlyTime(String raw) {
     return '${h12.toString().padLeft(2, '0')}:$m $period';
   }
 
-  return trimmed; // fallback
+  return trimmed;
 }
 
 class _LoadingList extends StatelessWidget {
@@ -638,26 +619,19 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
   const _ErrorView({required this.message, required this.onRetry});
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(Dimension.width(24)),
+        padding: EdgeInsets.symmetric(horizontal: Dimension.width(24)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: Dimension.width(48),
-              color: Colors.redAccent,
-            ),
+            Icon(Icons.error_outline, size: Dimension.width(32)),
+            SizedBox(height: Dimension.height(8)),
+            Text(message, textAlign: TextAlign.center),
             SizedBox(height: Dimension.height(12)),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            SizedBox(height: Dimension.height(16)),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
@@ -670,48 +644,28 @@ class _EmptyView extends StatelessWidget {
   final int statusFilter;
   final VoidCallback onRefresh;
   const _EmptyView({required this.statusFilter, required this.onRefresh});
+
   @override
   Widget build(BuildContext context) {
-    String message;
-    if (statusFilter == 0) {
-      message = 'No upcoming bookings';
-    } else if (statusFilter == 1) {
-      message = 'No completed bookings';
-    } else {
-      message = 'No cancelled bookings';
-    }
+    final text = statusFilter == 0
+        ? 'No upcoming bookings.'
+        : statusFilter == 1
+        ? 'No completed bookings.'
+        : 'No cancelled bookings.';
 
-    return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          SizedBox(height: Dimension.height(120)),
-          Icon(
-            Icons.event_busy,
-            size: Dimension.width(64),
-            color: Colors.grey[400],
-          ),
-          SizedBox(height: Dimension.height(16)),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: Dimension.font(16),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: Dimension.height(8)),
-          Text(
-            'Pull to refresh or change tab',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: Dimension.font(12),
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: Dimension.width(24)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.calendar_today_outlined, size: Dimension.width(32)),
+            SizedBox(height: Dimension.height(8)),
+            Text(text, textAlign: TextAlign.center),
+            SizedBox(height: Dimension.height(12)),
+            ElevatedButton(onPressed: onRefresh, child: const Text('Refresh')),
+          ],
+        ),
       ),
     );
   }
