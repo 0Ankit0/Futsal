@@ -26,6 +26,9 @@ class ApiConst {
   // bookings
   static const String bookings = 'Booking';
 
+  // notifications
+  static const String deviceToken = 'Notifications/device-token';
+
   //reviews
   static const String reviews = 'Reviews'; //get and post reviews
   static String groundReviews(String groundId) => 'Reviews/Ground/$groundId';

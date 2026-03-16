@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'api_const.dart';
+import 'api_service.dart';
 import 'notification_service.dart';
 
 // Top-level function for background message handling
@@ -20,6 +22,7 @@ class FCMService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+  final ApiService _apiService = ApiService();
 
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
@@ -56,13 +59,16 @@ class FCMService {
         print('FCM Token: $_fcmToken');
       }
 
+      if (_fcmToken != null && _fcmToken!.isNotEmpty) {
+        await _sendTokenToBackend(_fcmToken!);
+      }
+
       // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
         if (kDebugMode) {
           print('FCM Token refreshed: $newToken');
         }
-        // TODO: Send new token to backend
         _sendTokenToBackend(newToken);
       });
 
@@ -136,10 +142,7 @@ class FCMService {
       print('Foreground message: ${message.notification?.title}');
     }
 
-    // Show local notification
     _showLocalNotification(message);
-
-    // Add to in-app notification list
     _addToInAppNotifications(message);
   }
 
@@ -181,7 +184,6 @@ class FCMService {
     final notification = message.notification;
     if (notification == null) return;
 
-    // Determine notification type from data
     final typeString = message.data['type'] as String?;
     NotificationType type = NotificationType.bookingConfirmed;
 
@@ -211,7 +213,6 @@ class FCMService {
       }
     }
 
-    // Add to in-app notification service
     NotificationService().showNotification(
       title: notification.title ?? 'Notification',
       body: notification.body ?? '',
@@ -220,36 +221,36 @@ class FCMService {
     );
   }
 
-  /// Handle notification tap (when user taps notification)
   void _handleNotificationTap(RemoteMessage message) {
     if (kDebugMode) {
       print('Notification tapped: ${message.data}');
     }
 
-    // Add to in-app notifications if not already added
     _addToInAppNotifications(message);
-
-    // TODO: Navigate to appropriate screen based on notification type
-    // This will be handled in the main app navigation
   }
 
-  /// Handle local notification tap
   void _onLocalNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
       print('Local notification tapped: ${response.payload}');
     }
-    // TODO: Handle navigation
   }
 
-  /// Send token to backend
+  Future<void> registerCurrentTokenWithBackend() async {
+    if (_fcmToken != null && _fcmToken!.isNotEmpty) {
+      await _sendTokenToBackend(_fcmToken!);
+    }
+  }
+
   Future<void> _sendTokenToBackend(String token) async {
     try {
-      // TODO: Implement API call to send token to backend
-      // Example:
-      // await ApiService().post('/users/fcm-token', {'token': token});
-      if (kDebugMode) {
-        print('TODO: Send FCM token to backend: $token');
+      if (!_apiService.isAuthenticated) {
+        return;
       }
+
+      await _apiService.post(
+        ApiConst.deviceToken,
+        data: {'token': token, 'platform': _platformName},
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error sending token to backend: $e');
@@ -257,7 +258,42 @@ class FCMService {
     }
   }
 
-  /// Subscribe to a topic
+  Future<void> removeTokenFromBackend() async {
+    try {
+      if (!_apiService.isAuthenticated || _fcmToken == null) {
+        return;
+      }
+
+      await _apiService.delete(
+        ApiConst.deviceToken,
+        data: {'token': _fcmToken, 'platform': _platformName},
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error removing token from backend: $e');
+      }
+    }
+  }
+
+  String get _platformName {
+    if (kIsWeb) return 'web';
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      case TargetPlatform.fuchsia:
+        return 'fuchsia';
+    }
+  }
+
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
@@ -271,7 +307,6 @@ class FCMService {
     }
   }
 
-  /// Unsubscribe from a topic
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
@@ -285,9 +320,9 @@ class FCMService {
     }
   }
 
-  /// Delete FCM token
   Future<void> deleteToken() async {
     try {
+      await removeTokenFromBackend();
       await _firebaseMessaging.deleteToken();
       _fcmToken = null;
       if (kDebugMode) {
