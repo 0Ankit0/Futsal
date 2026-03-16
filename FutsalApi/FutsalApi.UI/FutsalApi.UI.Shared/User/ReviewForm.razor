@@ -32,7 +32,7 @@
 
     private async Task HandleValidSubmit()
     {
-        await Http.PostAsJsonAsync("Reviews", reviewRequest);
+        await Http.PostAsJsonAsync(ApiRoutes.Reviews.Base, reviewRequest);
         // Refresh the reviews list
     }
 }

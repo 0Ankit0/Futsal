@@ -60,7 +60,7 @@
 
     private async Task HandleValidSubmit()
     {
-        await Http.PostAsJsonAsync("Booking", bookingRequest);
+        await Http.PostAsJsonAsync(ApiRoutes.Booking.Base, bookingRequest);
         NavigationManager.NavigateTo("/my-bookings");
     }
 }

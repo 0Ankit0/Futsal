@@ -27,7 +27,7 @@
     {
         if (Id != null)
         {
-            var result = await Http.GetFromJsonAsync<Role>($"Roles/{Id}");
+            var result = await Http.GetFromJsonAsync<Role>(ApiRoutes.Roles.ById(Id));
             if (result != null && result.Name != null)
             {
                 role = new RoleRequest { Name = result.Name };
@@ -39,11 +39,11 @@
     {
         if (Id != null)
         {
-            await Http.PutAsJsonAsync($"Roles/{Id}", role);
+            await Http.PutAsJsonAsync(ApiRoutes.Roles.ById(Id), role);
         }
         else
         {
-            await Http.PostAsJsonAsync("Roles", role);
+            await Http.PostAsJsonAsync(ApiRoutes.Roles.Base, role);
         }
 
         NavigationManager.NavigateTo("/admin/roles");

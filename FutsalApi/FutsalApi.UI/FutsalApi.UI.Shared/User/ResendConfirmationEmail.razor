@@ -24,7 +24,7 @@
 
     private async Task HandleValidSubmit()
     {
-        await Http.PostAsJsonAsync("User/resendConfirmationEmail", resendRequest);
+        await Http.PostAsJsonAsync(ApiRoutes.User.ResendConfirmationEmail, resendRequest);
         // Display a success message to the user
     }
 }

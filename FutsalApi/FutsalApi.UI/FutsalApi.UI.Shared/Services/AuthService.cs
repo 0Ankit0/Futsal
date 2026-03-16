@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FutsalApi.UI.Shared.Models;
+using FutsalApi.UI.Shared;
 
 namespace FutsalApi.UI.Shared.Services
 {
@@ -16,13 +17,13 @@ namespace FutsalApi.UI.Shared.Services
 
         public async Task<bool> Login(LoginRequest loginRequest)
         {
-            var response = await _httpClient.PostAsJsonAsync("/login", loginRequest);
+            var response = await _httpClient.PostAsJsonAsync(ApiRoutes.User.Login, loginRequest);
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> Register(RegisterRequest registerRequest)
         {
-            var response = await _httpClient.PostAsJsonAsync("/register", registerRequest);
+            var response = await _httpClient.PostAsJsonAsync(ApiRoutes.User.Register, registerRequest);
             return response.IsSuccessStatusCode;
         }
     }

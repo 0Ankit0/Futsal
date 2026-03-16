@@ -113,7 +113,7 @@
             WebsiteUrl = websiteUrl
         };
 
-        var response = await Http.PostAsJsonAsync("PaymentGateway/khalti/initiate", khaltiRequest);
+        var response = await Http.PostAsJsonAsync(ApiRoutes.PaymentGateway.KhaltiInitiate, khaltiRequest);
 
         if (response.IsSuccessStatusCode)
         {
@@ -132,7 +132,7 @@
 
     private async Task HandleRegularPayment()
     {
-        var result = await Http.PostAsJsonAsync("Payment", paymentRequest);
+        var result = await Http.PostAsJsonAsync(ApiRoutes.Payment.Base, paymentRequest);
         if (result.IsSuccessStatusCode)
         {
             NavigationManager.NavigateTo("/my-payments");

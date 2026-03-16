@@ -28,7 +28,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        roles = await Http.GetFromJsonAsync<Role[]>("Roles");
+        roles = await Http.GetFromJsonAsync<Role[]>(ApiRoutes.Roles.Base);
     }
 
     void EditRole(string roleId)
@@ -38,7 +38,7 @@ else
 
     async Task DeleteRole(string roleId)
     {
-        await Http.DeleteAsync($"Roles/{roleId}");
-        roles = await Http.GetFromJsonAsync<Role[]>("Roles");
+        await Http.DeleteAsync(ApiRoutes.Roles.ById(roleId));
+        roles = await Http.GetFromJsonAsync<Role[]>(ApiRoutes.Roles.Base);
     }
 }

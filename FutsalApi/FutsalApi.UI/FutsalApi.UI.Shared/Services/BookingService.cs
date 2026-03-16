@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FutsalApi.UI.Shared.Models;
+using FutsalApi.UI.Shared;
 
 namespace FutsalApi.UI.Shared.Services
 {
@@ -16,7 +17,7 @@ namespace FutsalApi.UI.Shared.Services
 
         public async Task BookFutsal(BookingRequest bookingRequest)
         {
-            await _httpClient.PostAsJsonAsync("api/bookings", bookingRequest);
+            await _httpClient.PostAsJsonAsync(ApiRoutes.Booking.Base, bookingRequest);
         }
     }
 }

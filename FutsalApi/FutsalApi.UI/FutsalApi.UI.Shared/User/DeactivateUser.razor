@@ -14,7 +14,7 @@
 @code {
     private async Task DeactivateAccount()
     {
-        var result = await Http.PostAsync("User/manage/deactivate", null);
+        var result = await Http.PostAsync(ApiRoutes.User.Deactivate, null);
         if (result.IsSuccessStatusCode)
         {
             NavigationManager.NavigateTo("/login");
