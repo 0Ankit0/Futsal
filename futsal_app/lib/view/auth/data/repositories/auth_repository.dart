@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ui/core/service/api_service.dart';
 import 'package:ui/core/service/api_const.dart';
+import 'package:ui/core/service/fcm_service.dart';
 import 'package:ui/view/auth/data/model/auth_model.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -8,6 +9,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthRepository {
   final ApiService _apiService = ApiService();
+  final FCMService _fcmService = FCMService();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
@@ -192,17 +194,20 @@ class AuthRepository {
   // Logout
   Future<void> logout() async {
     try {
-      // Call logout API (optional, depends on backend)
+      try {
+        await _fcmService.removeTokenFromBackend();
+      } catch (e) {
+        // Ignore token unregister errors during logout
+      }
+
       try {
         await _apiService.post(ApiConst.logout);
       } catch (e) {
         // Ignore API errors during logout
       }
 
-      // Clear all stored auth data
       await _clearAuthData();
     } catch (e) {
-      // Ensure data is cleared even if there's an error
       await _clearAuthData();
       rethrow;
     }
@@ -253,6 +258,8 @@ class AuthRepository {
       _expiryTimeKey,
       authResponse.expiryTime.toIso8601String(),
     );
+
+    await _fcmService.registerCurrentTokenWithBackend();
   }
 
   // Clear all auth data from SharedPreferences

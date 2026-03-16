@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Security.Claims;
 
-
 using FutsalApi.ApiService.Infrastructure;
 using FutsalApi.Data.Models;
 using FutsalApi.ApiService.Repositories;
-using FutsalApi.ApiService.Infrastructure;
 using FutsalApi.Data.DTO;
-using FutsalApi.Data.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -49,6 +46,28 @@ public class NotificationsApiEndpoints : IEndpoint
             .WithSummary("Update Notification status by UserId")
             .WithDescription("Update Notification status by UserId")
             .Produces<string>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        // POST: /Notifications/device-token
+        routeGroup.MapPost("/device-token", UpsertDeviceToken)
+            .WithName("UpsertDeviceToken")
+            .WithSummary("Register or update device token")
+            .WithDescription("Registers or updates an authenticated user's push notification device token by platform")
+            .Accepts<DeviceTokenRequest>("application/json")
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+        // DELETE: /Notifications/device-token
+        routeGroup.MapDelete("/device-token", RemoveDeviceToken)
+            .WithName("RemoveDeviceToken")
+            .WithSummary("Remove device token")
+            .WithDescription("Removes an authenticated user's push notification device token by platform")
+            .Accepts<DeviceTokenRequest>("application/json")
+            .Produces<string>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
@@ -120,6 +139,60 @@ public class NotificationsApiEndpoints : IEndpoint
         catch (Exception ex)
         {
             return TypedResults.Problem($"An error occurred while updating the notification status: {ex.Message}");
+        }
+    }
+
+    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound>> UpsertDeviceToken(
+        [FromServices] INotificationRepository repository,
+        [FromServices] UserManager<User> userManager,
+        ClaimsPrincipal claimsPrincipal,
+        [FromBody] DeviceTokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.Platform))
+        {
+            return TypedResults.Problem("Token and platform are required.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.NotFound();
+            }
+
+            await repository.UpsertDeviceTokenAsync(user.Id, request.Token, request.Platform);
+            return TypedResults.Ok("Device token registered successfully.");
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.Problem($"An error occurred while registering device token: {ex.Message}");
+        }
+    }
+
+    internal async Task<Results<Ok<string>, ProblemHttpResult, NotFound>> RemoveDeviceToken(
+        [FromServices] INotificationRepository repository,
+        [FromServices] UserManager<User> userManager,
+        ClaimsPrincipal claimsPrincipal,
+        [FromBody] DeviceTokenRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Platform))
+        {
+            return TypedResults.Problem("Platform is required.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
+            {
+                return TypedResults.NotFound();
+            }
+
+            await repository.RemoveDeviceTokenAsync(user.Id, request.Token, request.Platform);
+            return TypedResults.Ok("Device token removed successfully.");
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.Problem($"An error occurred while removing device token: {ex.Message}");
         }
     }
 }
