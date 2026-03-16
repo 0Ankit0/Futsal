@@ -23,6 +23,14 @@ class ApiConst {
 
   // bookings
   static const String bookings = 'Booking';
+  static String cancelBooking(int id) => 'Booking/cancel/$id';
+  static String acceptBooking(int id) => 'Booking/accept/$id';
+  static const String pendingBookings = 'Booking/pending';
+  static const String completedBookings = 'Booking/completed';
+  static const String cancelledBookings = 'Booking/cancelled';
+
+  // notifications
+  static const String deviceToken = 'Notifications/device-token';
 
   //reviews
   static const String reviews = 'Reviews'; //get and post reviews

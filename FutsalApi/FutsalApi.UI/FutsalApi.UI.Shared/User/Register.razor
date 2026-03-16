@@ -1,6 +1,5 @@
 ﻿@page "/register"
-@using FutsalApi.Data.Models
-@using Auth
+@using FutsalApi.UI.Shared.Models
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
@@ -18,6 +17,21 @@
     </div>
 
     <div class="mb-3">
+        <label for="firstName">First Name</label>
+        <InputText id="firstName" @bind-Value="registerRequest.FirstName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="lastName">Last Name</label>
+        <InputText id="lastName" @bind-Value="registerRequest.LastName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label for="userName">Username (optional)</label>
+        <InputText id="userName" @bind-Value="registerRequest.UserName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
         <label for="password">Password</label>
         <InputText type="password" id="password" @bind-Value="registerRequest.Password" class="form-control" />
     </div>
@@ -30,7 +44,7 @@
 
     private async Task HandleValidSubmit()
     {
-        var result = await Http.PostAsJsonAsync("User/register", registerRequest);
+        var result = await Http.PostAsJsonAsync(ApiRoutes.User.Register, registerRequest);
         if (result.IsSuccessStatusCode)
         {
             NavigationManager.NavigateTo("/login");

@@ -32,12 +32,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        notifications = await Http.GetFromJsonAsync<NotificationResponse[]>("Notifications");
+        notifications = await Http.GetFromJsonAsync<NotificationResponse[]>(ApiRoutes.Notifications.Base);
     }
 
     private async Task MarkAsRead(int notificationId)
     {
-        await Http.PutAsync($"Notifications/{notificationId}", null);
-        notifications = await Http.GetFromJsonAsync<NotificationResponse[]>("Notifications");
+        await Http.PutAsync(ApiRoutes.Notifications.ById(notificationId), null);
+        notifications = await Http.GetFromJsonAsync<NotificationResponse[]>(ApiRoutes.Notifications.Base);
     }
 }

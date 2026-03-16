@@ -30,6 +30,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        reviews = await Http.GetFromJsonAsync<ReviewResponse[]>($"Reviews/Ground/{GroundId}");
+        reviews = await Http.GetFromJsonAsync<ReviewResponse[]>(ApiRoutes.Reviews.Ground(GroundId));
     }
 }

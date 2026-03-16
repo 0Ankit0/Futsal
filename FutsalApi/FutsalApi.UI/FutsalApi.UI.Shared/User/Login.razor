@@ -30,7 +30,7 @@
 
     private async Task HandleValidSubmit()
     {
-        var result = await Http.PostAsJsonAsync("User/login", loginRequest);
+        var result = await Http.PostAsJsonAsync(ApiRoutes.User.Login, loginRequest);
         if (result.IsSuccessStatusCode)
         {
             NavigationManager.NavigateTo("/");

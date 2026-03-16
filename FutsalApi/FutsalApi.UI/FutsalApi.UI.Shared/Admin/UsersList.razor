@@ -24,6 +24,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        users = await Http.GetFromJsonAsync<InfoResponse[]>("User/info");
+        users = await Http.GetFromJsonAsync<InfoResponse[]>(ApiRoutes.User.ManageInfo);
     }
 }

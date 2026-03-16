@@ -27,6 +27,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        payments = await Http.GetFromJsonAsync<PaymentResponse[]>("Payment");
+        payments = await Http.GetFromJsonAsync<PaymentResponse[]>(ApiRoutes.Payment.Base);
     }
 }

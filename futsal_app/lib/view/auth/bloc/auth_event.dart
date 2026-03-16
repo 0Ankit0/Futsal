@@ -27,16 +27,20 @@ class LoginWithGoogleRequested extends AuthEvent {
 class RegisterRequested extends AuthEvent {
   final String email;
   final String password;
-  final String name;
+  final String firstName;
+  final String lastName;
+  final String? userName;
 
   const RegisterRequested({
     required this.email,
     required this.password,
-    required this.name,
+    required this.firstName,
+    required this.lastName,
+    this.userName,
   });
 
   @override
-  List<Object?> get props => [email, password, name];
+  List<Object?> get props => [email, password, firstName, lastName, userName];
 }
 
 // Logout event

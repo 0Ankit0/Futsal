@@ -69,19 +69,19 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        claims = await Http.GetFromJsonAsync<List<ClaimModel>>($"Roles/{RoleId}/Claims");
+        claims = await Http.GetFromJsonAsync<List<ClaimModel>>(ApiRoutes.Roles.Claims(RoleId));
     }
 
     private async Task AddClaim()
     {
-        await Http.PostAsJsonAsync($"Roles/{RoleId}/Claims", newClaim);
-        claims = await Http.GetFromJsonAsync<List<ClaimModel>>($"Roles/{RoleId}/Claims");
+        await Http.PostAsJsonAsync(ApiRoutes.Roles.Claims(RoleId), newClaim);
+        claims = await Http.GetFromJsonAsync<List<ClaimModel>>(ApiRoutes.Roles.Claims(RoleId));
         newClaim = new();
     }
 
     private async Task RemoveClaim(ClaimModel claim)
     {
-        await Http.DeleteAsync($"Roles/{RoleId}/Claims?type={claim.Type}&value={claim.Value}");
-        claims = await Http.GetFromJsonAsync<List<ClaimModel>>($"Roles/{RoleId}/Claims");
+        await Http.DeleteAsync($"{ApiRoutes.Roles.Claims(RoleId)}?type={claim.Type}&value={claim.Value}");
+        claims = await Http.GetFromJsonAsync<List<ClaimModel>>(ApiRoutes.Roles.Claims(RoleId));
     }
 }

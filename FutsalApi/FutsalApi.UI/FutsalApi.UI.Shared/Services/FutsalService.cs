@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using FutsalApi.UI.Shared.Models;
+using FutsalApi.UI.Shared;
 
 namespace FutsalApi.UI.Shared.Services
 {
@@ -40,12 +41,12 @@ namespace FutsalApi.UI.Shared.Services
             
             var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
             
-            return await _httpClient.GetFromJsonAsync<IEnumerable<FutsalGroundResponse>>($"FutsalGround/search{queryString}") ?? new List<FutsalGroundResponse>();
+            return await _httpClient.GetFromJsonAsync<IEnumerable<FutsalGroundResponse>>($"{ApiRoutes.FutsalGround.Search}{queryString}") ?? new List<FutsalGroundResponse>();
         }
 
         public async Task<FutsalGroundResponse> GetFutsalGroundById(int id)
         {
-            return await _httpClient.GetFromJsonAsync<FutsalGroundResponse>($"FutsalGround/{id}");
+            return await _httpClient.GetFromJsonAsync<FutsalGroundResponse>(ApiRoutes.FutsalGround.ById(id));
         }
     }
 }
