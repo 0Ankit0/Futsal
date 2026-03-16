@@ -60,7 +60,7 @@ public class AuthApiEndpointsTests
     public async Task RegisterUser_InvalidEmail_ReturnsValidationProblem()
     {
         // Arrange
-        var registration = new RegisterRequest { Email = "invalid", Password = "Password123!" };
+        var registration = new RegisterRequest { Email = "invalid", FirstName = "Test", LastName = "User", Password = "Password123!" };
         _serviceProviderMock.Setup(x => x.GetService(typeof(UserManager<User>))).Returns(_userManagerMock.Object);
         _serviceProviderMock.Setup(x => x.GetService(typeof(IUserStore<User>))).Returns(_userStoreMock.Object);
 
@@ -85,7 +85,7 @@ public class AuthApiEndpointsTests
     public async Task RegisterUser_ValidEmail_ReturnsOk()
     {
         // Arrange
-        var registration = new RegisterRequest { Email = "test@example.com", Password = "Password123!" };
+        var registration = new RegisterRequest { Email = "test@example.com", FirstName = "Test", LastName = "User", Password = "Password123!" };
         var emailStore = new Mock<IUserEmailStore<User>>();
         _serviceProviderMock.Setup(x => x.GetService(typeof(UserManager<User>))).Returns(_userManagerMock.Object);
         _serviceProviderMock.Setup(x => x.GetService(typeof(IUserStore<User>))).Returns(emailStore.Object);
@@ -132,6 +132,37 @@ public class AuthApiEndpointsTests
 
         // Assert
         result.Result.Should().BeOfType<Ok>();
+    }
+
+
+    [Fact]
+    public async Task RegisterUser_MissingFirstName_ReturnsValidationProblem()
+    {
+        // Arrange
+        var registration = new RegisterRequest
+        {
+            Email = "test@example.com",
+            FirstName = "",
+            LastName = "User",
+            Password = "Password123!"
+        };
+
+        var emailStore = new Mock<IUserEmailStore<User>>();
+        _serviceProviderMock.Setup(x => x.GetService(typeof(UserManager<User>))).Returns(_userManagerMock.Object);
+        _serviceProviderMock.Setup(x => x.GetService(typeof(IUserStore<User>))).Returns(emailStore.Object);
+
+        // Act
+        var result = await _authApi.RegisterUser(
+            registration,
+            new DefaultHttpContext(),
+            _serviceProviderMock.Object,
+            _linkGeneratorMock.Object,
+            _emailSenderMock.Object
+        );
+
+        // Assert
+        result.Result.Should().BeOfType<ValidationProblem>();
+        _userManagerMock.Verify(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

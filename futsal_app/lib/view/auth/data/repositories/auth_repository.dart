@@ -162,12 +162,20 @@ class AuthRepository {
   Future<AuthResponseModel> register({
     required String email,
     required String password,
-    required String name,
+    required String firstName,
+    required String lastName,
+    String? userName,
   }) async {
     try {
       final response = await _apiService.post(
         ApiConst.register,
-        data: {'email': email, 'password': password, 'name': name},
+        data: {
+          'email': email,
+          'password': password,
+          'firstName': firstName,
+          'lastName': lastName,
+          'userName': userName,
+        },
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
