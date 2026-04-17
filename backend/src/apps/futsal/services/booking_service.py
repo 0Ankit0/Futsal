@@ -13,12 +13,9 @@ from src.apps.futsal.models.booking import Booking, BookingStatus
 from src.apps.futsal.models.booking_lock import BookingLock
 from src.apps.futsal.models.ground_closure import GroundClosure
 from src.apps.futsal.schemas import BookingCreate
-from src.apps.payout.models.payout_ledger import PayoutLedger
 from src.apps.core.analytics import analytics
 
 LOCK_TTL_MINUTES = 10
-PLATFORM_FEE_PCT = 5.0
-POINTS_PER_100_NPR = 1
 CANCELLATION_GRACE_HOURS = 2
 
 
@@ -154,7 +151,6 @@ def _compute_price(
     booking_date: date,
     start_time: time,
     end_time: time,
-    loyalty_discount: float = 0.0,
 ) -> float:
     """Compute booking price with weekend + peak-hour pricing."""
     from src.apps.futsal.services.slot_service import _is_weekend, _is_peak_hour
@@ -171,7 +167,7 @@ def _compute_price(
     if _is_peak_hour(start_time, ground.peak_hours_start, ground.peak_hours_end):
         base *= ground.peak_price_multiplier
 
-    return max(0.0, round(base * duration_hours - loyalty_discount, 2))
+    return round(base * duration_hours, 2)
 
 
 async def create_booking(
@@ -179,7 +175,6 @@ async def create_booking(
     ground: FutsalGround,
     user_id: int,
     data: BookingCreate,
-    loyalty_discount: float = 0.0,
 ) -> Booking:
     """
     Atomically create a booking.
@@ -188,7 +183,7 @@ async def create_booking(
     await _validate_booking_constraints(db, ground, data.booking_date, data.start_time, data.end_time)
     await _check_slot_available(db, ground.id, data.booking_date, data.start_time, data.end_time)
 
-    total = _compute_price(ground, data.booking_date, data.start_time, data.end_time, loyalty_discount)
+    total = _compute_price(ground, data.booking_date, data.start_time, data.end_time)
 
     booking = Booking(
         user_id=user_id,
@@ -243,13 +238,16 @@ async def create_booking(
     )
 
     # Notify clients watching this ground's room that a slot is now locked
-    await _push_slot_event(ground.id, "slot.locked", booking)
+    try:
+        await _push_slot_event(ground.id, "slot.locked", booking)
+    except Exception:
+        pass
 
     return booking
 
 
 async def confirm_booking(db: AsyncSession, booking: Booking) -> Booking:
-    """Mark booking as CONFIRMED (called after payment success)."""
+    """Mark booking as CONFIRMED and release the temporary slot lock."""
     booking.status = BookingStatus.CONFIRMED
     booking.updated_at = datetime.utcnow()
     db.add(booking)
@@ -261,21 +259,6 @@ async def confirm_booking(db: AsyncSession, booking: Booking) -> Booking:
     lock = lock_result.scalars().first()
     if lock:
         await db.delete(lock)
-
-    # Create payout ledger entry
-    gross = booking.total_amount
-    fee = round(gross * PLATFORM_FEE_PCT / 100, 2)
-    ledger = PayoutLedger(
-        ground_id=booking.ground_id,
-        owner_id=(await db.get(FutsalGround, booking.ground_id)).owner_id,  # type: ignore
-        booking_id=booking.id,
-        gross_amount=gross,
-        platform_fee_pct=PLATFORM_FEE_PCT,
-        platform_fee=fee,
-        net_amount=round(gross - fee, 2),
-        settled=False,
-    )
-    db.add(ledger)
 
     await db.commit()
     await db.refresh(booking)
@@ -323,17 +306,6 @@ async def cancel_booking(
     booking.cancelled_at = datetime.utcnow()
     booking.updated_at = datetime.utcnow()
     db.add(booking)
-
-    # Remove any payout ledger entry (unsettled only)
-    ledger_result = await db.execute(
-        select(PayoutLedger).where(
-            PayoutLedger.booking_id == booking.id,
-            PayoutLedger.settled == False,
-        )
-    )
-    ledger = ledger_result.scalars().first()
-    if ledger:
-        await db.delete(ledger)
 
     await db.commit()
     await db.refresh(booking)

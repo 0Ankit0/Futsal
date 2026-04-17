@@ -16,7 +16,7 @@ from src.apps.iam.schemas.token import Token
 from src.apps.iam.schemas.user import UserCreate
 from src.apps.core.cache import RedisCache
 
-from src.apps.iam.utils.ip_access import revoke_tokens_for_ip, get_client_ip
+from src.apps.iam.utils.ip_access import get_client_ip
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -84,9 +84,6 @@ async def signup(
         # Decode tokens to get JTI
         access_payload = jwt.decode(access_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
         refresh_payload = jwt.decode(refresh_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
-
-        # Revoke any existing active tokens for this user+IP before issuing new ones
-        await revoke_tokens_for_ip(db, new_user.id, ip_address)
 
         # Track access token
         access_token_tracking = TokenTracking(

@@ -16,11 +16,10 @@ from src.apps.futsal.models.ground import FutsalGround
 from src.apps.futsal.models.booking import Booking, BookingStatus
 from src.apps.futsal.schemas import BookingCreate, BookingResponse
 from src.apps.futsal.services.booking_service import (
-    create_booking, cancel_booking, complete_booking,
+    create_booking, confirm_booking, cancel_booking, complete_booking,
     SlotAlreadyBookedError, SlotLockedError, GroundClosedError, OutsideOperatingHoursError,
     BookingNotEligibleForCancelError,
 )
-from src.apps.futsal.services.loyalty_service import redeem_points, earn_points
 import qrcode
 
 router = APIRouter(tags=["Bookings"])
@@ -31,6 +30,30 @@ async def _get_booking_or_404(db: AsyncSession, booking_id: int) -> Booking:
     if not booking:
         raise HTTPException(status_code=404, detail="Booking not found.")
     return booking
+
+
+def _serialize_booking(booking: Booking, ground: FutsalGround | None = None) -> BookingResponse:
+    return BookingResponse(
+        id=booking.id or 0,
+        user_id=booking.user_id,
+        ground_id=booking.ground_id,
+        booking_date=booking.booking_date,
+        start_time=booking.start_time,
+        end_time=booking.end_time,
+        status=booking.status.value if isinstance(booking.status, BookingStatus) else str(booking.status),
+        total_amount=booking.total_amount,
+        paid_amount=booking.paid_amount,
+        team_name=booking.team_name,
+        notes=booking.notes,
+        qr_code=booking.qr_code,
+        is_recurring=booking.is_recurring,
+        recurring_type=booking.recurring_type.value if booking.recurring_type else None,
+        recurring_end_date=booking.recurring_end_date,
+        cancellation_reason=booking.cancellation_reason,
+        ground_name=ground.name if ground else None,
+        ground_slug=ground.slug if ground else None,
+        ground_location=ground.location if ground else None,
+    )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -48,16 +71,9 @@ async def create_new_booking(
     if not ground or not ground.is_active:
         raise HTTPException(status_code=404, detail="Ground not found or inactive.")
 
-    # Handle loyalty point redemption
-    loyalty_discount = 0.0
-    if data.loyalty_points_to_redeem > 0:
-        try:
-            loyalty_discount = await redeem_points(db, current_user.id, data.loyalty_points_to_redeem)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-
     try:
-        booking = await create_booking(db, ground, current_user.id, data, loyalty_discount)
+        booking = await create_booking(db, ground, current_user.id, data)
+        booking = await confirm_booking(db, booking)
     except SlotAlreadyBookedError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except SlotLockedError as e:
@@ -69,7 +85,7 @@ async def create_new_booking(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    return booking
+    return _serialize_booking(booking, ground)
 
 
 @router.get("/bookings", response_model=List[BookingResponse])
@@ -85,7 +101,12 @@ async def list_my_bookings(
         stmt = stmt.where(Booking.status == status_filter)
     stmt = stmt.order_by(Booking.booking_date.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    bookings = result.scalars().all()
+    serialized: list[BookingResponse] = []
+    for booking in bookings:
+        ground = await db.get(FutsalGround, booking.ground_id)
+        serialized.append(_serialize_booking(booking, ground))
+    return serialized
 
 
 @router.get("/bookings/{booking_id}", response_model=BookingResponse)
@@ -101,7 +122,7 @@ async def get_booking(
             and not current_user.is_superuser
             and (ground and ground.owner_id != current_user.id)):
         raise HTTPException(status_code=403, detail="Not authorized.")
-    return booking
+    return _serialize_booking(booking, ground)
 
 
 @router.patch("/bookings/{booking_id}/cancel", response_model=BookingResponse)
@@ -120,7 +141,7 @@ async def cancel_my_booking(
         booking = await cancel_booking(db, booking, current_user.id, reason, is_owner=bool(is_owner))
     except BookingNotEligibleForCancelError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return booking
+    return _serialize_booking(booking, ground)
 
 
 @router.get("/bookings/{booking_id}/qr")
@@ -168,11 +189,7 @@ async def checkin_booking(
     booking.qr_used = True
     booking = await complete_booking(db, booking)
 
-    # Earn loyalty points on check-in
-    await earn_points(db, booking.user_id, booking.id, booking.total_amount)
-    await db.commit()
-
-    return booking
+    return _serialize_booking(booking, ground)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -202,4 +219,4 @@ async def list_ground_bookings(
         stmt = stmt.where(Booking.status == status_filter)
     stmt = stmt.order_by(Booking.booking_date.desc(), Booking.start_time).offset(skip).limit(limit)
     result = await db.execute(stmt)
-    return result.scalars().all()
+    return [_serialize_booking(booking, ground) for booking in result.scalars().all()]

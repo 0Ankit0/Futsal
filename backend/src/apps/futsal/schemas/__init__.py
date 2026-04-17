@@ -90,7 +90,6 @@ class BookingCreate(SQLModel):
     is_recurring: bool = False
     recurring_type: Optional[str] = None
     recurring_end_date: Optional[date] = None
-    loyalty_points_to_redeem: int = 0
 
 
 class BookingResponse(SQLModel):
@@ -110,6 +109,9 @@ class BookingResponse(SQLModel):
     recurring_type: Optional[str] = None
     recurring_end_date: Optional[date] = None
     cancellation_reason: Optional[str] = None
+    ground_name: Optional[str] = None
+    ground_slug: Optional[str] = None
+    ground_location: Optional[str] = None
 
 
 class ReviewCreate(SQLModel):

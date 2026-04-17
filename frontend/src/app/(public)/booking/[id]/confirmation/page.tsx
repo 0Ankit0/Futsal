@@ -33,7 +33,7 @@ const STATUS_CONFIG = {
   confirmed: {
     icon: <CheckCircle2 className="h-20 w-20 text-green-500" />,
     title: 'Booking Confirmed!',
-    subtitle: 'Your slot is reserved. Show the QR code at the ground.',
+    subtitle: 'Your slot is reserved and ready for match day.',
     color: 'text-green-700',
     bg: 'bg-green-50',
     border: 'border-green-200',
@@ -134,6 +134,12 @@ export default function BookingConfirmationPage({ params }: { params: { id: stri
                 <span className="font-medium text-gray-800">{booking.ground_name}</span>
               </div>
             )}
+            {booking.ground_location && (
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Location</span>
+                <span className="font-medium text-gray-800">{booking.ground_location}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-gray-500"><CalendarDays className="h-3.5 w-3.5" /> Date</span>
               <span className="font-medium text-gray-800">{booking.booking_date}</span>
@@ -151,28 +157,12 @@ export default function BookingConfirmationPage({ params }: { params: { id: stri
               </div>
             )}
             <div className="border-t pt-2 flex justify-between font-semibold text-gray-900">
-              <span>Amount Paid</span>
-              <span className="text-green-700">Rs. {booking.paid_amount.toLocaleString()}</span>
+              <span>Booking Total</span>
+              <span className="text-green-700">Rs. {booking.total_amount.toLocaleString()}</span>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* QR Code */}
-      {booking.qr_code && booking.status === 'confirmed' && (
-        <Card className="mb-6">
-          <CardContent className="p-5 flex flex-col items-center">
-            <h2 className="text-base font-semibold text-gray-900 mb-3">Entry QR Code</h2>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={booking.qr_code}
-              alt="Booking QR Code"
-              className="w-48 h-48 object-contain border rounded-lg p-2 bg-white"
-            />
-            <p className="text-xs text-gray-400 mt-2">Show this at the ground for entry</p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Actions */}
       <div className="flex flex-col gap-3">

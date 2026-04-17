@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPin, Clock, Shield, ArrowRight, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, CalendarDays, ArrowRight, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function HomePage() {
@@ -12,7 +12,7 @@ export default function HomePage() {
             Book Your Futsal Ground Instantly
           </h1>
           <p className="text-lg md:text-xl text-green-100 mb-10 max-w-2xl mx-auto">
-            Find and reserve the best futsal grounds near you in seconds. Real-time availability, secure payments.
+            Find nearby grounds, compare availability, and lock in your next match without the back-and-forth.
           </p>
           <Link
             href="/grounds"
@@ -56,9 +56,9 @@ export default function HomePage() {
                 desc: 'See live slot availability and book instantly. No double bookings, ever.',
               },
               {
-                icon: <Shield className="h-8 w-8 text-green-600" />,
-                title: 'Secure Payments',
-                desc: 'Pay safely via Khalti or eSewa. Your transactions are fully encrypted.',
+                icon: <CalendarDays className="h-8 w-8 text-green-600" />,
+                title: 'Simple Booking Management',
+                desc: 'Track upcoming games, review your booking history, and cancel in time when plans change.',
               },
             ].map(({ icon, title, desc }) => (
               <Card key={title} className="text-center p-6 hover:shadow-lg transition-shadow">
@@ -81,7 +81,7 @@ export default function HomePage() {
             {[
               { step: 1, title: 'Browse Grounds', desc: 'Search and filter futsal grounds by location, type, and price.' },
               { step: 2, title: 'Pick a Slot', desc: 'Choose your preferred date and time from available slots.' },
-              { step: 3, title: 'Play!', desc: 'Make a secure payment and show your QR code at the ground.' },
+              { step: 3, title: 'Play!', desc: 'Confirm the booking and head to the ground at match time.' },
             ].map(({ step, title, desc }) => (
               <div key={step} className="flex flex-col items-center text-center">
                 <div className="w-14 h-14 rounded-full bg-green-600 text-white flex items-center justify-center text-xl font-bold mb-4 shadow-md">

@@ -51,6 +51,9 @@ export interface Booking {
   qr_code: string;
   is_recurring: boolean;
   cancellation_reason?: string;
+  ground_name?: string;
+  ground_slug?: string;
+  ground_location?: string;
 }
 
 export interface Review {
@@ -116,6 +119,17 @@ export function useGround(id: number) {
   });
 }
 
+export function useGroundBySlug(slug: string) {
+  return useQuery({
+    queryKey: ['ground-slug', slug],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FutsalGround>(`/futsal/grounds/by-slug/${slug}`);
+      return data;
+    },
+    enabled: !!slug,
+  });
+}
+
 export function useGroundSlots(groundId: number, date: string) {
   return useQuery({
     queryKey: ['slots', groundId, date],
@@ -138,7 +152,20 @@ export function useCreateGround() {
       const res = await apiClient.post<FutsalGround>('/futsal/grounds', data);
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['grounds'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['grounds'] });
+      qc.invalidateQueries({ queryKey: ['my-grounds'] });
+    },
+  });
+}
+
+export function useMyGrounds() {
+  return useQuery({
+    queryKey: ['my-grounds'],
+    queryFn: async () => {
+      const { data } = await apiClient.get<FutsalGround[]>('/futsal/grounds/mine');
+      return data;
+    },
   });
 }
 
@@ -152,6 +179,7 @@ export function useUpdateGround(id: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ground', id] });
       qc.invalidateQueries({ queryKey: ['grounds'] });
+      qc.invalidateQueries({ queryKey: ['my-grounds'] });
     },
   });
 }
@@ -189,12 +217,14 @@ export function useCreateBooking() {
       end_time: string;
       team_name?: string;
       notes?: string;
-      loyalty_points_to_redeem?: number;
     }) => {
       const res = await apiClient.post<Booking>('/futsal/bookings', data);
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-bookings'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-bookings'] });
+      qc.invalidateQueries({ queryKey: ['slots'] });
+    },
   });
 }
 
@@ -207,7 +237,11 @@ export function useCancelBooking() {
       });
       return res.data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['my-bookings'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['my-bookings'] });
+      qc.invalidateQueries({ queryKey: ['ground-bookings'] });
+      qc.invalidateQueries({ queryKey: ['slots'] });
+    },
   });
 }
 

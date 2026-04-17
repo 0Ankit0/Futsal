@@ -373,8 +373,8 @@ def test_peak_hour_multiplier_applied():
 
 
 @pytest.mark.unit
-def test_loyalty_discount_applied():
-    """Loyalty discount reduces final price."""
+def test_standard_price_has_no_discount_applied():
+    """Core booking flow uses direct slot pricing without loyalty adjustments."""
     ground = _make_ground(
         price_per_hour=500.0,
         weekend_price_per_hour=None,
@@ -383,15 +383,5 @@ def test_loyalty_discount_applied():
         peak_price_multiplier=1.0,
     )
     monday = date(2026, 6, 1)
-    price = _compute_price(ground, monday, time(10, 0), time(11, 0), loyalty_discount=100.0)
-    assert price == pytest.approx(400.0)
-
-
-@pytest.mark.unit
-def test_loyalty_discount_cannot_make_price_negative():
-    """Loyalty discount larger than price → price clamped to 0."""
-    ground = _make_ground(price_per_hour=500.0, peak_price_multiplier=1.0,
-                          weekend_price_per_hour=None, peak_hours_start=None, peak_hours_end=None)
-    monday = date(2026, 6, 1)
-    price = _compute_price(ground, monday, time(10, 0), time(11, 0), loyalty_discount=9999.0)
-    assert price == pytest.approx(0.0)
+    price = _compute_price(ground, monday, time(10, 0), time(11, 0))
+    assert price == pytest.approx(500.0)

@@ -1,13 +1,13 @@
 'use client';
 
-import { useGrounds, useUpdateGround } from '@/hooks/use-futsal';
+import { useMyGrounds } from '@/hooks/use-futsal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Plus, MapPin, Star, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, MapPin, Star, Clock, CheckCircle } from 'lucide-react';
 
 export default function OwnerGroundsPage() {
-  const { data: grounds = [], isLoading } = useGrounds();
+  const { data: grounds = [], isLoading } = useMyGrounds();
 
   if (isLoading) return <div className="text-gray-400">Loading grounds...</div>;
 
@@ -42,7 +42,7 @@ export default function OwnerGroundsPage() {
                   <h3 className="font-semibold text-lg">{g.name}</h3>
                   <div className="flex gap-1">
                     {g.is_verified ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" title="Verified" />
+                      <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
                       <span className="text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
                         Pending Verification

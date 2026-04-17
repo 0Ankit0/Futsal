@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Fastapi Template',
-  description: 'Modern Fastapi Template platform',
+  title: 'Futsal Booking App',
+  description: 'Browse grounds, reserve slots, and manage bookings with ease.',
 };
 
 export default function RootLayout({

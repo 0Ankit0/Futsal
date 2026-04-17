@@ -50,7 +50,10 @@ export interface AdminDailyTrend {
 export function useAdminAnalyticsSummary() {
   return useQuery<AdminAnalyticsSummary>({
     queryKey: ['admin', 'analytics', 'summary'],
-    queryFn: () => apiClient.get<AdminAnalyticsSummary>('/futsal/admin/analytics/summary'),
+    queryFn: async () => {
+      const { data } = await apiClient.get<AdminAnalyticsSummary>('/futsal/admin/analytics/summary');
+      return data;
+    },
     staleTime: 5 * 60 * 1000, // 5 min
     refetchOnWindowFocus: false,
   });
@@ -59,8 +62,10 @@ export function useAdminAnalyticsSummary() {
 export function useAdminDailyTrend(days: number = 30) {
   return useQuery<AdminDailyTrend>({
     queryKey: ['admin', 'analytics', 'daily-trend', days],
-    queryFn: () =>
-      apiClient.get<AdminDailyTrend>(`/futsal/admin/analytics/daily-trend?days=${days}`),
+    queryFn: async () => {
+      const { data } = await apiClient.get<AdminDailyTrend>(`/futsal/admin/analytics/daily-trend?days=${days}`);
+      return data;
+    },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });

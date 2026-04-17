@@ -1,6 +1,6 @@
 # FutsalApp
 
-A full-stack futsal ground booking platform built with **FastAPI** (Python) and **Next.js** (TypeScript). Migrated from a .NET Aspire microservices architecture to a modern monorepo with a single-process backend.
+A full-stack futsal ground booking platform built with **FastAPI** and **Next.js**. The project is focused on the core booking experience: players can discover grounds, view live availability, reserve slots, and manage their bookings, while owners can manage their grounds and monitor reservations.
 
 ## Table of Contents
 
@@ -16,68 +16,52 @@ A full-stack futsal ground booking platform built with **FastAPI** (Python) and 
 
 ## Overview
 
-FutsalApp lets players discover and book futsal grounds online, while ground owners manage their venues, track earnings, and receive automated daily payouts. A superuser (platform admin) oversees all grounds, subscriptions, and the financial flow.
+The app is intentionally centered on the workflows a futsal booking product needs most:
 
-**Three user roles:**
-- **Superuser (Platform Admin)** — manages users, verifies grounds, controls payout mode, views platform-wide analytics
-- **Ground Owner** — lists grounds, manages bookings, configures payment gateways, manages staff, pays monthly subscription
-- **Player (User)** — browses grounds, books slots, earns loyalty points, leaves reviews
+- **Players** can sign up, browse grounds, review slot availability, make bookings, and manage upcoming or past matches.
+- **Ground owners** can create and update ground listings, set pricing and hours, and review bookings for each venue.
+
+Non-core product branches such as loyalty rewards, subscriptions, payouts, admin analytics, and template-style dashboard features have been removed from the active app flow so the main journeys are reliable and easier to maintain.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Next.js 16 Frontend (TypeScript, Tailwind, shadcn/ui)  │
-│  Public site · Owner dashboard · Admin dashboard        │
+│  Next.js 16 Frontend (TypeScript, Tailwind)             │
+│  Public site · Player dashboard · Owner dashboard       │
 └──────────────────────┬──────────────────────────────────┘
                        │ REST + WebSocket
 ┌──────────────────────▼──────────────────────────────────┐
-│  FastAPI Backend (Python 3.12)  ─  137 routes           │
-│  IAM · Futsal · Payout · Subscription · Notifications   │
+│  FastAPI Backend                                         │
+│  Auth · Grounds · Slots · Bookings · Reviews            │
 └──────────┬──────────────────────────┬───────────────────┘
            │                          │
-    ┌──────▼──────┐           ┌───────▼──────┐
-    │  PostgreSQL │           │  Redis Cache │
-    │  (SQLModel) │           │  + Celery    │
-    └─────────────┘           └──────────────┘
+     ┌──────▼──────┐           ┌───────▼──────┐
+     │  PostgreSQL │           │  Redis Cache │
+     │  (SQLModel) │           │  / WebSocket │
+     └─────────────┘           └──────────────┘
 ```
-
-### Payout Modes
-
-| Mode       | Flow                                                          |
-|------------|---------------------------------------------------------------|
-| `PLATFORM` | Players pay → platform merchant account → midnight job pushes net to each owner's gateway |
-| `DIRECT`   | Players pay → owner's own merchant account → midnight job records audit entry |
-
-Switch by setting `PAYOUT_MODE=PLATFORM` or `PAYOUT_MODE=DIRECT` in `.env`. No code change required.
 
 ## Key Features
 
-- **Concurrent booking prevention** — `SELECT FOR UPDATE` + `BookingLock` table (10-min TTL slot reservation)
-- **Automated daily payouts** — Celery Beat at midnight; 3-retry exponential backoff on failure
-- **Subscription system** — owners pay monthly; 3-day grace period; trial support
-- **Ground staff / managers** — owners invite managers via email token; role-based access
-- **Loyalty points** — 1 point per NPR 100 spent; redeemable on future bookings
-- **Waitlist** — users join waiting list for fully-booked slots
-- **QR check-in** — time-limited QR code per booking
-- **PostHog analytics** — frontend page views + user identification; backend server-side events
-- **Payment gateways** — Khalti, eSewa, Stripe, PayPal (owner credentials encrypted with AES-256-GCM)
-- **WebSocket** — real-time online presence and slot availability updates
-- **2FA / OTP** — TOTP-based two-factor authentication
-- **Social login** — Google, GitHub, Facebook OAuth
+- **Ground discovery** — browse grounds with search, pricing, and type filters
+- **Ground detail and slots** — inspect venue details and see live slot availability by date
+- **Safe booking flow** — reserve a slot with race-condition-safe locking to prevent double bookings
+- **Booking management** — view confirmed, completed, and cancelled bookings in one place
+- **Owner tools** — create and edit grounds, set hours and pricing, and review venue bookings
+- **Reviews** — display ground feedback from completed bookings
+- **JWT authentication** — email/password auth with protected player and owner areas
 
 ## Tech Stack
 
 | Layer     | Technology                                          |
 |-----------|-----------------------------------------------------|
 | Frontend  | Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query, Zustand |
-| Backend   | FastAPI, SQLModel, Alembic, Pydantic v2              |
+| Backend   | FastAPI, SQLModel, Alembic, Pydantic v2             |
 | Database  | PostgreSQL (production), SQLite (development)       |
-| Cache     | Redis                                               |
-| Queue     | Celery + Celery Beat                                |
-| Auth      | JWT (access + refresh), 2FA TOTP, OAuth2            |
-| Payments  | Khalti, eSewa, Stripe, PayPal                       |
-| Analytics | PostHog (frontend + server-side)                    |
+| Cache     | Redis (optional for production cache/WebSocket integrations) |
+| Queue     | Celery (optional background tasks)                  |
+| Auth      | JWT (access + refresh)                              |
 | Storage   | Local filesystem (dev), S3-compatible (production)  |
 
 ## Project Structure
@@ -114,7 +98,7 @@ npm install
 npm run dev                    # http://localhost:3000
 ```
 
-See [Setup and Installation](./Documentation/Setup-and-Installation.md) for the full guide including Redis and Celery setup.
+See [Setup and Installation](./Documentation/Setup-and-Installation.md) for the full guide. Redis and Celery are optional for the simplified booking-first local workflow.
 
 ## Documentation
 

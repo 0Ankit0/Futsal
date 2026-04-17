@@ -71,7 +71,7 @@ def _empty_db() -> AsyncMock:
     db = AsyncMock()
     empty_result = MagicMock()
     empty_result.scalars.return_value.first.return_value = None
-    db.execute.return_value = empty_result
+    db.execute.side_effect = [empty_result, empty_result, empty_result]
     db.flush = AsyncMock()
     db.commit = AsyncMock()
     db.refresh = AsyncMock()
@@ -85,7 +85,7 @@ def _conflicting_db() -> AsyncMock:
     db = AsyncMock()
     conflict_result = MagicMock()
     conflict_result.scalars.return_value.first.return_value = MagicMock(spec=Booking)
-    db.execute.return_value = conflict_result
+    db.execute.side_effect = [conflict_result]
     return db
 
 
@@ -199,7 +199,12 @@ async def test_create_booking_succeeds_on_free_slot():
 @pytest.mark.unit
 async def test_create_booking_raises_on_conflict():
     """create_booking raises SlotAlreadyBookedError when slot is taken."""
-    db = _conflicting_db()
+    db = AsyncMock()
+    empty_result = MagicMock()
+    empty_result.scalars.return_value.first.return_value = None
+    conflict_result = MagicMock()
+    conflict_result.scalars.return_value.first.return_value = MagicMock(spec=Booking)
+    db.execute.side_effect = [empty_result, conflict_result]
     ground = _make_ground()
     data = _make_booking_data()
 
@@ -210,7 +215,12 @@ async def test_create_booking_raises_on_conflict():
 @pytest.mark.unit
 async def test_create_booking_raises_when_lock_held():
     """create_booking raises SlotLockedError when another user holds the lock."""
-    db = _locked_db()
+    db = AsyncMock()
+    empty_result = MagicMock()
+    empty_result.scalars.return_value.first.return_value = None
+    lock_result = MagicMock()
+    lock_result.scalars.return_value.first.return_value = MagicMock(spec=BookingLock)
+    db.execute.side_effect = [empty_result, empty_result, lock_result]
     ground = _make_ground()
     data = _make_booking_data()
 
@@ -236,11 +246,11 @@ async def test_create_booking_on_closed_ground_raises():
     from src.apps.futsal.services.booking_service import GroundClosedError
     from src.apps.futsal.models.ground_closure import GroundClosure
 
-    db = _empty_db()
+    db = AsyncMock()
     # First execute call (for closure check) returns a closure record
     closure_result = MagicMock()
     closure_result.scalars.return_value.first.return_value = MagicMock(spec=GroundClosure)
-    db.execute.return_value = closure_result
+    db.execute.side_effect = [closure_result]
 
     ground = _make_ground()
     data = _make_booking_data()

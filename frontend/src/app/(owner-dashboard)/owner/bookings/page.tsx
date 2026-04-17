@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useGrounds, useGroundBookings, type Booking } from '@/hooks/use-futsal';
+import { useMyGrounds, useGroundBookings } from '@/hooks/use-futsal';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Calendar, Search } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-700',
@@ -19,7 +19,7 @@ export default function OwnerBookingsPage() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedGroundId, setSelectedGroundId] = useState<number | null>(null);
 
-  const { data: grounds = [] } = useGrounds();
+  const { data: grounds = [] } = useMyGrounds();
   const groundId = selectedGroundId ?? grounds[0]?.id ?? 0;
   const { data: bookings = [], isLoading } = useGroundBookings(groundId, {
     booking_date: selectedDate,

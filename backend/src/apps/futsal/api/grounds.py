@@ -6,7 +6,8 @@ from datetime import date
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, func
+from sqlalchemy import or_
+from sqlmodel import select
 
 from src.apps.iam.api.deps import get_current_user, get_db
 from src.apps.iam.models.user import User
@@ -54,6 +55,7 @@ async def _get_ground_or_404(db: AsyncSession, ground_id: int) -> FutsalGround:
 @router.get("", response_model=List[GroundResponse])
 async def list_grounds(
     db: Annotated[AsyncSession, Depends(get_db)],
+    search: Optional[str] = Query(None),
     location: Optional[str] = Query(None),
     min_price: Optional[float] = Query(None),
     max_price: Optional[float] = Query(None),
@@ -63,6 +65,14 @@ async def list_grounds(
     limit: int = Query(20, ge=1, le=100),
 ):
     stmt = select(FutsalGround).where(FutsalGround.is_active == True)
+    if search:
+        like_term = f"%{search}%"
+        stmt = stmt.where(
+            or_(
+                FutsalGround.name.ilike(like_term),
+                FutsalGround.location.ilike(like_term),
+            )
+        )
     if location:
         stmt = stmt.where(FutsalGround.location.ilike(f"%{location}%"))
     if min_price is not None:
@@ -76,6 +86,27 @@ async def list_grounds(
     stmt = stmt.offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+@router.get("/mine", response_model=List[GroundResponse])
+async def list_my_grounds(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    stmt = select(FutsalGround).where(FutsalGround.owner_id == current_user.id).order_by(FutsalGround.created_at.desc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.get("/by-slug/{slug}", response_model=GroundResponse)
+async def get_ground_by_slug(slug: str, db: Annotated[AsyncSession, Depends(get_db)]):
+    result = await db.execute(
+        select(FutsalGround).where(FutsalGround.slug == slug, FutsalGround.is_active == True)
+    )
+    ground = result.scalars().first()
+    if not ground:
+        raise HTTPException(status_code=404, detail="Ground not found.")
+    return ground
 
 
 @router.get("/{ground_id}", response_model=GroundResponse)

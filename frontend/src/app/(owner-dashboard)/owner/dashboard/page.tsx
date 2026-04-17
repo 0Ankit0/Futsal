@@ -1,15 +1,14 @@
 'use client';
 
 import { useAuthStore } from '@/store/auth-store';
-import { usePendingBalance, useGrounds, useGroundBookings } from '@/hooks/use-futsal';
+import { useMyGrounds, useGroundBookings } from '@/hooks/use-futsal';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Wallet, MapPin, Calendar, TrendingUp } from 'lucide-react';
+import { MapPin, Calendar, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OwnerDashboardPage() {
   const { user } = useAuthStore();
-  const { data: grounds = [] } = useGrounds();
-  const { data: balance } = usePendingBalance();
+  const { data: grounds = [] } = useMyGrounds();
   const today = new Date().toISOString().split('T')[0];
   const { data: todaysBookings = [] } = useGroundBookings(
     grounds[0]?.id ?? 0,
@@ -23,13 +22,6 @@ export default function OwnerDashboardPage() {
 
   const stats = [
     {
-      name: 'Pending Payout',
-      value: `NPR ${balance?.pending_amount?.toLocaleString() ?? 0}`,
-      icon: Wallet,
-      href: '/owner/payout',
-      color: 'text-green-600 bg-green-50',
-    },
-    {
       name: "Today's Bookings",
       value: String(confirmedToday),
       icon: Calendar,
@@ -40,7 +32,7 @@ export default function OwnerDashboardPage() {
       name: "Today's Revenue",
       value: `NPR ${revenueToday.toLocaleString()}`,
       icon: TrendingUp,
-      href: '/owner/analytics',
+      href: '/owner/bookings',
       color: 'text-purple-600 bg-purple-50',
     },
     {
@@ -61,7 +53,7 @@ export default function OwnerDashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {stats.map((stat) => (
           <Link key={stat.name} href={stat.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
