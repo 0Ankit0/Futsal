@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/hooks/use-auth';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Star, Clock, CheckCircle, AlertCircle, Lock } from 'lucide-react';
-import type { FutsalGround, Slot, Review } from '@/hooks/use-futsal';
+import { useGrounds, type Slot, type Review } from '@/hooks/use-futsal';
 
 const TYPE_COLORS: Record<string, string> = {
   indoor: 'bg-blue-100 text-blue-700',
@@ -23,26 +23,27 @@ function StarRating({ rating, count }: { rating: number; count?: number }) {
       {[1, 2, 3, 4, 5].map((s) => (
         <Star key={s} className={`h-4 w-4 ${s <= Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} />
       ))}
-      <span className="text-sm text-gray-500 ml-1">{rating.toFixed(1)}{count !== undefined && ` (${count})`}</span>
+      <span className="text-sm text-gray-500 ml-1">
+        {rating.toFixed(1)}{count !== undefined && ` (${count})`}
+      </span>
     </div>
   );
 }
 
 function GroundDetailClient({ slug }: { slug: string }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isAuthenticated } = useAuth();
   const today = new Date().toISOString().split('T')[0];
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  const [hasAccessToken, setHasAccessToken] = useState(false);
   const { track } = useAnalytics();
 
-  const { data: ground, isLoading: groundLoading } = useQuery({
-    queryKey: ['ground-slug', slug],
-    queryFn: async () => {
-      const { data } = await apiClient.get<FutsalGround>(`/futsal/grounds/${slug}`);
-      return data;
-    },
-    enabled: !!slug,
-  });
+  useEffect(() => {
+    setHasAccessToken(!!localStorage.getItem('access_token'));
+  }, []);
+
+  const { data: grounds = [], isLoading: groundsLoading } = useGrounds();
+  const ground = grounds.find((item) => item.slug === slug);
 
   useEffect(() => {
     if (ground) {
@@ -72,7 +73,7 @@ function GroundDetailClient({ slug }: { slug: string }) {
     enabled: !!ground?.id,
   });
 
-  if (groundLoading) {
+  if (groundsLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-3 gap-8">
@@ -97,16 +98,14 @@ function GroundDetailClient({ slug }: { slug: string }) {
     );
   }
 
-  const bookingHref = isAuthenticated
+  const bookingHref = (isAuthenticated || hasAccessToken)
     ? `/grounds/${slug}/book?slot_start=${selectedSlot?.start_time}&slot_end=${selectedSlot?.end_time}&date=${selectedDate}&ground_id=${ground.id}`
     : `/login?redirect=/grounds/${slug}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left section */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Header */}
           <div>
             <div className="flex flex-wrap items-center gap-3 mb-2">
               <h1 className="text-3xl font-bold text-gray-900">{ground.name}</h1>
@@ -126,7 +125,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
             <StarRating rating={ground.average_rating} count={ground.rating_count} />
           </div>
 
-          {/* Description */}
           {ground.description && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-2">About</h2>
@@ -134,7 +132,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
             </div>
           )}
 
-          {/* Amenities */}
           {ground.amenities && Object.keys(ground.amenities).length > 0 && (
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Amenities</h2>
@@ -151,7 +148,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
             </div>
           )}
 
-          {/* Hours & Pricing */}
           <div className="grid sm:grid-cols-2 gap-4">
             <Card>
               <CardContent className="p-4">
@@ -173,7 +169,8 @@ function GroundDetailClient({ slug }: { slug: string }) {
                     <p className="text-gray-700">Weekend: <span className="font-semibold text-green-700">Rs. {ground.weekend_price_per_hour.toLocaleString()}/hr</span></p>
                   )}
                   {ground.peak_price_multiplier > 1 && (
-                    <p className="text-gray-500 text-xs">Peak hours multiplier: {ground.peak_price_multiplier}×
+                    <p className="text-gray-500 text-xs">
+                      Peak hours multiplier: {ground.peak_price_multiplier}×
                       {ground.peak_hours_start && ground.peak_hours_end && ` (${ground.peak_hours_start}–${ground.peak_hours_end})`}
                     </p>
                   )}
@@ -182,7 +179,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
             </Card>
           </div>
 
-          {/* Reviews */}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Reviews</h2>
             {!reviews || reviews.length === 0 ? (
@@ -201,7 +197,7 @@ function GroundDetailClient({ slug }: { slug: string }) {
                       {review.comment && <p className="text-gray-700 text-sm mb-2">{review.comment}</p>}
                       {review.owner_reply && (
                         <div className="mt-3 pl-3 border-l-2 border-green-200 bg-green-50 rounded p-2">
-                          <p className="text-xs font-semibold text-green-700 mb-0.5">Owner's reply</p>
+                          <p className="text-xs font-semibold text-green-700 mb-0.5">Owner&apos;s reply</p>
                           <p className="text-sm text-gray-600">{review.owner_reply}</p>
                         </div>
                       )}
@@ -213,14 +209,12 @@ function GroundDetailClient({ slug }: { slug: string }) {
           </div>
         </div>
 
-        {/* Right sticky section */}
         <div className="lg:col-span-1">
           <div className="sticky top-6 space-y-4">
             <Card>
               <CardContent className="p-5">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Book a Slot</h2>
 
-                {/* Date picker */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Date</label>
                   <input
@@ -232,7 +226,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
                   />
                 </div>
 
-                {/* Slot grid */}
                 {slotsLoading ? (
                   <div className="grid grid-cols-2 gap-2">
                     {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-10 rounded-md" />)}
@@ -244,9 +237,12 @@ function GroundDetailClient({ slug }: { slug: string }) {
                     <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                       {slots.map((slot) => {
                         const isSelected = selectedSlot?.start_time === slot.start_time;
+
                         if (slot.is_locked) {
                           return (
-                            <button key={slot.start_time} disabled
+                            <button
+                              key={slot.start_time}
+                              disabled
                               className="flex flex-col items-center justify-center py-2 px-1 rounded-md border border-yellow-200 bg-yellow-50 text-yellow-600 text-xs cursor-not-allowed opacity-80"
                             >
                               <Lock className="h-3 w-3 mb-0.5" />
@@ -255,9 +251,12 @@ function GroundDetailClient({ slug }: { slug: string }) {
                             </button>
                           );
                         }
+
                         if (!slot.is_available) {
                           return (
-                            <button key={slot.start_time} disabled
+                            <button
+                              key={slot.start_time}
+                              disabled
                               className="flex flex-col items-center justify-center py-2 px-1 rounded-md border border-gray-200 bg-gray-100 text-gray-400 text-xs cursor-not-allowed"
                             >
                               <span>{slot.start_time.slice(0, 5)}</span>
@@ -265,6 +264,7 @@ function GroundDetailClient({ slug }: { slug: string }) {
                             </button>
                           );
                         }
+
                         return (
                           <button
                             key={slot.start_time}
@@ -289,7 +289,6 @@ function GroundDetailClient({ slug }: { slug: string }) {
                   </>
                 )}
 
-                {/* Selected slot summary */}
                 {selectedSlot && (
                   <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md text-sm">
                     <p className="font-semibold text-green-800">Selected Slot</p>
@@ -298,21 +297,21 @@ function GroundDetailClient({ slug }: { slug: string }) {
                   </div>
                 )}
 
-                  {selectedSlot ? (
-                    <Link
-                      href={bookingHref}
-                      className="w-full mt-4 inline-flex items-center justify-center font-medium rounded-lg transition-colors bg-green-600 hover:bg-green-700 text-white px-4 py-2"
-                    >
-                      Book Now
-                    </Link>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full mt-4 inline-flex items-center justify-center font-medium rounded-lg bg-green-600 text-white px-4 py-2 opacity-50 cursor-not-allowed"
-                    >
-                      Select a Slot
-                    </button>
-                  )}
+                {selectedSlot ? (
+                  <Link
+                    href={bookingHref}
+                    className="w-full mt-4 inline-flex items-center justify-center font-medium rounded-lg transition-colors bg-green-600 hover:bg-green-700 text-white px-4 py-2"
+                  >
+                    Book Now
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="w-full mt-4 inline-flex items-center justify-center font-medium rounded-lg bg-green-600 text-white px-4 py-2 opacity-50 cursor-not-allowed"
+                  >
+                    Select a Slot
+                  </button>
+                )}
               </CardContent>
             </Card>
           </div>

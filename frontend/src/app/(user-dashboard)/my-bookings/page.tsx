@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useMyBookings, useCancelBooking, type Booking } from '@/hooks/use-futsal';
+import { useGrounds } from '@/hooks/use-futsal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -61,11 +62,11 @@ function ReviewModal({
 
   const submitReview = useMutation({
     mutationFn: async () => {
-      const { data } = await apiClient.post('/futsal/reviews', {
-        ground_id: booking.ground_id,
-        booking_id: booking.id,
+      const { data } = await apiClient.post(`/futsal/grounds/${booking.ground_id}/reviews`, {
         rating,
         comment: comment.trim() || undefined,
+      }, {
+        params: { booking_id: booking.id },
       });
       return data;
     },
@@ -246,13 +247,7 @@ export default function MyBookingsPage() {
   const cancelBooking = useCancelBooking();
 
   // Fetch grounds to resolve names
-  const { data: grounds = [] } = useQuery({
-    queryKey: ['grounds'],
-    queryFn: async () => {
-      const { data } = await apiClient.get('/futsal/grounds', { params: { limit: 200 } });
-      return data as { id: number; name: string; slug: string }[];
-    },
-  });
+  const { data: grounds = [] } = useGrounds();
   const groundMap = Object.fromEntries(grounds.map((g) => [g.id, g]));
 
   // Filter bookings by active tab

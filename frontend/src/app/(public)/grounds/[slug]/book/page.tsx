@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { useAuthStore } from '@/store/auth-store';
+import { useAuth } from '@/hooks/use-auth';
 import { useAnalytics } from '@/hooks/use-analytics';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Clock, AlertCircle, CalendarDays } from 'lucide-react';
-import type { FutsalGround, Booking } from '@/hooks/use-futsal';
+import { useGrounds, type FutsalGround, type Booking } from '@/hooks/use-futsal';
 
 const PAYMENT_METHODS = [
   { id: 'khalti', label: 'Khalti', logo: '💜' },
@@ -24,9 +24,9 @@ type PaymentMethod = (typeof PAYMENT_METHODS)[number]['id'];
 export default function BookingPage({ params }: { params: { slug: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const _hasHydrated = useAuthStore((s) => s._hasHydrated);
+  const { isAuthenticated } = useAuth();
   const { track } = useAnalytics();
+  const [hasAccessToken, setHasAccessToken] = useState(false);
 
   const groundId = searchParams.get('ground_id');
   const slotStart = searchParams.get('slot_start') ?? '';
@@ -41,19 +41,17 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (_hasHydrated && !isAuthenticated) {
+    setHasAccessToken(!!localStorage.getItem('access_token'));
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated && !hasAccessToken) {
       router.replace(`/login?redirect=/grounds/${params.slug}/book?ground_id=${groundId}&slot_start=${slotStart}&slot_end=${slotEnd}&date=${date}`);
     }
-  }, [_hasHydrated, isAuthenticated]);
+  }, [isAuthenticated, hasAccessToken, router, params.slug, groundId, slotStart, slotEnd, date]);
 
-  const { data: ground, isLoading } = useQuery({
-    queryKey: ['ground-slug', params.slug],
-    queryFn: async () => {
-      const { data } = await apiClient.get<FutsalGround>(`/futsal/grounds/${params.slug}`);
-      return data;
-    },
-    enabled: !!params.slug,
-  });
+  const { data: grounds = [], isLoading: groundsLoading } = useGrounds();
+  const ground = grounds.find((item) => item.slug === params.slug);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,8 +73,10 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
       track('booking_initiated', { ground_id: ground.id, ground_name: ground.name, date, slot_start: slotStart, slot_end: slotEnd, payment_method: paymentMethod });
 
       const { data: payment } = await apiClient.post('/payments/initiate', {
-        booking_id: booking.id,
-        payment_method: paymentMethod,
+        provider: paymentMethod,
+        amount: Math.max(1, Math.round((booking.total_amount ?? estimatedPrice) * 100)),
+        purchase_order_id: String(booking.id),
+        purchase_order_name: `${ground.name} booking`,
         return_url: `${window.location.origin}/booking/${booking.id}/confirmation`,
       });
 
@@ -101,7 +101,7 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
     }
   };
 
-  if (!_hasHydrated || isLoading) {
+  if (groundsLoading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 space-y-4">
         <Skeleton className="h-10 w-1/2" />

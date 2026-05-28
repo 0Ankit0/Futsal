@@ -36,10 +36,11 @@ const STATUS_ICONS: Record<SubscriptionStatus, React.ElementType> = {
 };
 
 function StatusBadge({ status }: { status: SubscriptionStatus }) {
-  const Icon = STATUS_ICONS[status];
+  const Icon = STATUS_ICONS[status] ?? Clock;
+  const style = STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600';
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase ${STATUS_STYLES[status]}`}
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold uppercase ${style}`}
     >
       <Icon className="h-3.5 w-3.5" />
       {status}
