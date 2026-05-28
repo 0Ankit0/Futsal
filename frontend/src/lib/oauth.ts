@@ -1,10 +1,12 @@
+import { getEnv } from '@/lib/env';
+
 export type OAuthProvider = 'google' | 'github' | 'facebook';
 
 export function startOAuthLogin(provider: OAuthProvider) {
   const state = Math.random().toString(36).substring(7);
   sessionStorage.setItem('oauth_state', state);
 
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  const backendUrl = getEnv('VITE_API_URL', 'NEXT_PUBLIC_API_URL') || 'http://localhost:8000/api/v1';
   const authUrl = `${backendUrl}/auth/social/${provider}/?state=${state}`;
 
   const width = 500;

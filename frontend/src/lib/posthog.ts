@@ -1,7 +1,9 @@
 import posthog from 'posthog-js';
+import { getEnv } from '@/lib/env';
 
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? '';
-const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+const POSTHOG_KEY = getEnv('VITE_POSTHOG_KEY', 'NEXT_PUBLIC_POSTHOG_KEY') ?? '';
+const POSTHOG_HOST = getEnv('VITE_POSTHOG_HOST', 'NEXT_PUBLIC_POSTHOG_HOST') ?? 'https://us.i.posthog.com';
+const NODE_ENV = getEnv('MODE', 'NODE_ENV') ?? 'development';
 
 /**
  * Initialize PostHog. Safe to call multiple times — guards against double-init
@@ -12,7 +14,7 @@ export function initPostHog() {
   if (posthog.__loaded) return;
 
   posthog.init(POSTHOG_KEY, {
-    api_host: '/ingest',            // proxied through Next.js to avoid ad-blockers
+    api_host: '/ingest',            // proxied through Vite dev server to avoid ad-blockers
     ui_host: POSTHOG_HOST,
     capture_pageview: false,        // we do this manually in PostHogProvider
     capture_pageleave: true,
@@ -20,7 +22,7 @@ export function initPostHog() {
     person_profiles: 'identified_only',
     loaded: (ph) => {
       // In development, disable to avoid noise
-      if (process.env.NODE_ENV === 'development') {
+      if (NODE_ENV === 'development') {
         ph.opt_out_capturing();
       }
     },

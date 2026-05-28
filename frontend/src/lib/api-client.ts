@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getEnv } from '@/lib/env';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const baseURL = getEnv('VITE_API_URL', 'NEXT_PUBLIC_API_URL') || 'http://localhost:8000/api/v1';
 
 export const apiClient = axios.create({
   baseURL,
