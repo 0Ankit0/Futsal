@@ -11,7 +11,7 @@ Futsal/
 │       └── ci-cd.yaml          # GitHub Actions CI/CD pipeline
 ├── Documentation/               # All project documentation
 ├── backend/                     # FastAPI application
-├── frontend/                    # Next.js application
+├── frontend/                    # React + Vite application
 ├── futsal_app/                  # Legacy .NET source (reference only)
 ├── README.md
 └── DEPLOYMENT.md
@@ -143,7 +143,8 @@ frontend/
 │   │   └── auth-store.ts        # Zustand auth store (persisted)
 │   └── types/                   # TypeScript interfaces
 ├── .env.local                   # Frontend environment variables
-├── next.config.ts               # Next.js config + PostHog reverse proxy
+├── vite.config.ts               # Vite config + API/PostHog dev proxy
+├── index.html                   # Vite HTML entry
 └── package.json
 ```
 

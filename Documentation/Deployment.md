@@ -1,12 +1,12 @@
 # Deployment Guide
 
-This guide covers deploying FutsalApp (FastAPI backend + Next.js frontend) to a production server using Docker Compose, with a GitHub Actions CI/CD pipeline.
+This guide covers deploying FutsalApp (FastAPI backend + Vite + React frontend) to a production server using Docker Compose, with a GitHub Actions CI/CD pipeline.
 
 ## Architecture Overview
 
 ```
 Internet → Nginx (reverse proxy)
-              ├── :80/:443 → Next.js (port 3000)
+              ├── :80/:443 → Vite preview / static frontend (port 5173)
               └── /api/*   → FastAPI  (port 8000)
                                ├── PostgreSQL (port 5432)
                                ├── Redis      (port 6379)
@@ -158,9 +158,9 @@ server {
     ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
 
-    # Next.js frontend
+    # Vite frontend
     location / {
-        proxy_pass http://localhost:3000;
+      proxy_pass http://localhost:5173;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
