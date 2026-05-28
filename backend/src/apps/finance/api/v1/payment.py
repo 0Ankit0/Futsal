@@ -14,7 +14,7 @@ from sqlmodel import select, col
 
 from src.apps.core.config import settings
 
-from src.apps.finance.models.payment import PaymentProvider, PaymentTransaction
+from src.apps.finance.models.payment import PaymentProvider, PaymentStatus, PaymentTransaction
 from src.apps.finance.schemas.payment import (
     InitiatePaymentRequest,
     InitiatePaymentResponse,
@@ -28,6 +28,8 @@ from src.apps.finance.services.khalti import KhaltiService
 from src.apps.finance.services.stripe import StripeService
 from src.apps.finance.services.paypal import PayPalService
 from src.apps.iam.api.deps import get_db
+from src.apps.futsal.models.booking import Booking, BookingStatus
+from src.apps.futsal.services.booking_service import confirm_booking
 
 router = APIRouter()
 
@@ -121,7 +123,25 @@ async def verify_payment(
     """
     provider_svc = _get_provider(request_body.provider)
     try:
-        return await provider_svc.verify_payment(request_body, db)
+        verification = await provider_svc.verify_payment(request_body, db)
+
+        if verification.status == PaymentStatus.COMPLETED:
+            tx_result = await db.execute(
+                select(PaymentTransaction).where(PaymentTransaction.id == verification.transaction_id)
+            )
+            tx = tx_result.scalars().first()
+
+            if tx is not None:
+                booking_result = await db.execute(
+                    select(Booking).where(Booking.id == int(tx.purchase_order_id))
+                )
+                booking = booking_result.scalars().first()
+
+                if booking is not None and booking.status != BookingStatus.CONFIRMED:
+                    booking.paid_amount = tx.amount / 100
+                    await confirm_booking(db, booking)
+
+        return verification
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
