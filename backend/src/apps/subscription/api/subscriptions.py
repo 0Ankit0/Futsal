@@ -4,7 +4,7 @@ Subscription API: plan management (superuser) + subscribe/renew/cancel (owner).
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -38,6 +38,8 @@ class PlanCreate(BaseModel):
 
 
 class PlanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     slug: str

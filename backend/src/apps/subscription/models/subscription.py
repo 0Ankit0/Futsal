@@ -13,12 +13,22 @@ if TYPE_CHECKING:
 
 
 class SubscriptionStatus(str, Enum):
-    TRIALING  = "trialing"   # within free trial window
-    ACTIVE    = "active"     # paid and within period
-    GRACE     = "grace"      # expired ≤3 days ago — dashboard still accessible
-    EXPIRED   = "expired"    # hard-expired — dashboard locked
-    CANCELLED = "cancelled"  # owner cancelled voluntarily
-    PAST_DUE  = "past_due"   # payment failed but still in grace
+    TRIALING  = "TRIALING"   # within free trial window
+    ACTIVE    = "ACTIVE"     # paid and within period
+    GRACE     = "GRACE"      # expired <=3 days ago - dashboard still accessible
+    EXPIRED   = "EXPIRED"    # hard-expired - dashboard locked
+    CANCELLED = "CANCELLED"  # owner cancelled voluntarily
+    PAST_DUE  = "PAST_DUE"   # payment failed but still in grace
+
+    @classmethod
+    def _missing_(cls, value):
+        # Accept legacy lowercase values stored in older rows.
+        if isinstance(value, str):
+            normalized = value.upper()
+            for member in cls:
+                if member.value == normalized:
+                    return member
+        return None
 
 
 class OwnerSubscription(SQLModel, table=True):
