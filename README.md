@@ -125,6 +125,7 @@ See [Setup and Installation](./Documentation/Setup-and-Installation.md) for the 
 | [API Endpoints](./Documentation/API-Endpoints.md) | All 137 FastAPI routes with methods, auth requirements, and descriptions |
 | [API Documentation](./Documentation/API-Documentation.md) | Request/response schemas and data models |
 | [Pages Overview](./Documentation/Pages-Overview.md) | All frontend pages by dashboard/role |
+| [QA Seed and Manual Test Guide](./Documentation/QA-Seed-and-Manual-Test-Guide.md) | Reusable QA seed command, role workflows, endpoint checks, and latest findings |
 | [Deployment](./Documentation/Deployment.md) | Docker Compose production deployment guide |
 
 ## Contributing
