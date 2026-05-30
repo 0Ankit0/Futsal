@@ -46,7 +46,8 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
 
   useEffect(() => {
     if (!isAuthenticated && !hasAccessToken) {
-      router.replace(`/login?redirect=/grounds/${params.slug}/book?ground_id=${groundId}&slot_start=${slotStart}&slot_end=${slotEnd}&date=${date}`);
+      const redirectPath = `/grounds/${params.slug}/book?ground_id=${groundId ?? ''}&slot_start=${slotStart}&slot_end=${slotEnd}&date=${date}`;
+      router.replace(`/login?redirect=${encodeURIComponent(redirectPath)}`);
     }
   }, [isAuthenticated, hasAccessToken, router, params.slug, groundId, slotStart, slotEnd, date]);
 

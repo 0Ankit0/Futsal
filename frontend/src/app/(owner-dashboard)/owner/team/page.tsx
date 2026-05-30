@@ -56,7 +56,7 @@ function useOwnerGrounds() {
   return useQuery({
     queryKey: ['owner-grounds'],
     queryFn: async () => {
-      const { data } = await apiClient.get<FutsalGround[]>('/grounds');
+      const { data } = await apiClient.get<FutsalGround[]>('/futsal/grounds');
       return data;
     },
   });

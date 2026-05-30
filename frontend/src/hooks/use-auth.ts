@@ -60,6 +60,7 @@ export function useAuth() {
       return response.data;
     },
     enabled: typeof window !== 'undefined' && !!localStorage.getItem('access_token'),
+    staleTime: 5 * 60_000,
   });
 
   const logout = async () => {

@@ -33,6 +33,22 @@ const TIER_CONFIG: Record<string, { color: string; bg: string; thresholds: [numb
   PLATINUM: { color: 'text-purple-700',  bg: 'bg-purple-100',  thresholds: [3000, 3000] },
 };
 
+function formatLoyaltyDate(value: string): string {
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toLocaleDateString();
+  }
+
+  // Fallback for non-ISO timestamps like "YYYY-MM-DD HH:mm:ss".
+  const normalized = value.includes(' ') ? value.replace(' ', 'T') : value;
+  const fallback = new Date(normalized);
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback.toLocaleDateString();
+  }
+
+  return '-';
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function LoyaltyPage() {
@@ -166,7 +182,7 @@ export default function LoyaltyPage() {
                   {history.map((tx) => (
                     <tr key={tx.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 text-gray-500 whitespace-nowrap">
-                        {new Date(tx.created_at).toLocaleDateString()}
+                        {formatLoyaltyDate(tx.created_at)}
                       </td>
                       <td className="px-5 py-3 text-gray-700">{tx.description}</td>
                       <td className="px-5 py-3">

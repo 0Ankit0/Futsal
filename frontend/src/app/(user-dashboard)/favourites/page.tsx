@@ -23,6 +23,11 @@ interface FavouriteGround {
   image_url?: string;
 }
 
+interface FavouriteEntry {
+  id: number;
+  ground_id: number;
+}
+
 // ── Ground Card ───────────────────────────────────────────────────────────────
 
 function GroundCard({
@@ -34,6 +39,16 @@ function GroundCard({
   onUnfavourite: (id: number) => void;
   isRemoving: boolean;
 }) {
+  const averageRating = Number.isFinite(Number(ground.average_rating))
+    ? Number(ground.average_rating)
+    : 0;
+  const ratingCount = Number.isFinite(Number(ground.rating_count))
+    ? Number(ground.rating_count)
+    : 0;
+  const pricePerHour = Number.isFinite(Number(ground.price_per_hour))
+    ? Number(ground.price_per_hour)
+    : 0;
+
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow group">
       {/* Image / placeholder */}
@@ -80,11 +95,11 @@ function GroundCard({
         <div className="mt-2 flex items-center justify-between">
           <div className="flex items-center gap-1 text-sm">
             <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-            <span className="font-medium">{ground.average_rating.toFixed(1)}</span>
-            <span className="text-gray-400">({ground.rating_count})</span>
+            <span className="font-medium">{averageRating.toFixed(1)}</span>
+            <span className="text-gray-400">({ratingCount})</span>
           </div>
           <span className="text-sm font-semibold text-green-700">
-            NPR {ground.price_per_hour.toLocaleString()}/hr
+            NPR {pricePerHour.toLocaleString()}/hr
           </span>
         </div>
 
@@ -106,8 +121,20 @@ export default function FavouritesPage() {
   const { data: favourites = [], isLoading, isError } = useQuery({
     queryKey: ['favourites'],
     queryFn: async () => {
-      const { data } = await apiClient.get<FavouriteGround[]>('/futsal/favourites');
-      return data;
+      const { data } = await apiClient.get<FavouriteEntry[]>('/futsal/favourites');
+      if (!data.length) {
+        return [] as FavouriteGround[];
+      }
+
+      const grounds = await Promise.all(
+        data.map(async (entry) => {
+          const { data: ground } = await apiClient.get<FavouriteGround>(
+            `/futsal/grounds/${entry.ground_id}`,
+          );
+          return ground;
+        }),
+      );
+      return grounds;
     },
   });
 

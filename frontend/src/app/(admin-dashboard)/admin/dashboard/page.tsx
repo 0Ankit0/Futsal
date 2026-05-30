@@ -51,7 +51,7 @@ export default function AdminDashboardPage() {
   const { data: rolesData } = useRoles();
   const { data: summary, isLoading } = useAdminAnalyticsSummary();
 
-  const totalUsers = usersData?.total ?? summary?.users.total ?? 0;
+  const totalUsers = usersData?.total ?? summary?.users?.total ?? 0;
   const activeSessions = tokenData?.total ?? 0;
   const totalRoles = rolesData?.length ?? 0;
 
@@ -59,50 +59,50 @@ export default function AdminDashboardPage() {
     {
       name: 'Total Users',
       value: String(totalUsers),
-      sub: `+${summary?.users.new_last_7d ?? 0} this week`,
+      sub: `+${summary?.users?.new_last_7d ?? 0} this week`,
       icon: Users,
       href: '/admin/users',
       color: 'text-indigo-400 bg-indigo-900',
     },
     {
       name: 'Active Subscriptions',
-      value: String(summary?.subscriptions.active ?? '—'),
-      sub: `NPR ${(summary?.revenue.subscription_monthly ?? 0).toLocaleString()}/mo`,
+      value: String(summary?.subscriptions?.active ?? '—'),
+      sub: `NPR ${(summary?.revenue?.subscription_monthly ?? 0).toLocaleString()}/mo`,
       icon: CheckCircle,
       href: '/admin/subscriptions',
       color: 'text-emerald-400 bg-emerald-900',
     },
     {
       name: 'Platform Revenue (30d)',
-      value: `NPR ${(summary?.revenue.platform_fee_30d ?? 0).toLocaleString()}`,
-      sub: `Gross NPR ${(summary?.revenue.gross_30d ?? 0).toLocaleString()}`,
+      value: `NPR ${(summary?.revenue?.platform_fee_30d ?? 0).toLocaleString()}`,
+      sub: `Gross NPR ${(summary?.revenue?.gross_30d ?? 0).toLocaleString()}`,
       icon: TrendingUp,
       href: '/admin/analytics',
       color: 'text-violet-400 bg-violet-900',
     },
     {
       name: 'Bookings Today',
-      value: String(summary?.bookings.today ?? '—'),
-      sub: `${summary?.bookings.last_7d ?? 0} this week`,
+      value: String(summary?.bookings?.today ?? '—'),
+      sub: `${summary?.bookings?.last_7d ?? 0} this week`,
       icon: BarChart2,
       href: '/admin/analytics',
       color: 'text-blue-400 bg-blue-900',
     },
     {
       name: 'Grounds',
-      value: String(summary?.grounds.total ?? '—'),
-      sub: `${summary?.grounds.verified ?? 0} verified`,
+      value: String(summary?.grounds?.total ?? '—'),
+      sub: `${summary?.grounds?.verified ?? 0} verified`,
       icon: MapPin,
       href: '/admin/grounds',
       color: 'text-orange-400 bg-orange-900',
     },
     {
       name: 'Payouts On Hold',
-      value: String(summary?.payouts.on_hold ?? '—'),
-      sub: `${summary?.payouts.failed ?? 0} failed`,
-      icon: summary?.payouts.on_hold ? AlertTriangle : Wallet,
+      value: String(summary?.payouts?.on_hold ?? '—'),
+      sub: `${summary?.payouts?.failed ?? 0} failed`,
+      icon: summary?.payouts?.on_hold ? AlertTriangle : Wallet,
       href: '/admin/payouts',
-      color: summary?.payouts.on_hold ? 'text-red-400 bg-red-900' : 'text-green-400 bg-green-900',
+      color: summary?.payouts?.on_hold ? 'text-red-400 bg-red-900' : 'text-green-400 bg-green-900',
     },
   ];
 
@@ -169,8 +169,8 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { href: '/admin/users',         icon: Users,     label: 'Manage Users',        desc: `${totalUsers} total`,      color: 'text-indigo-400' },
-                { href: '/admin/subscriptions', icon: CheckCircle, label: 'Subscriptions',     desc: `${summary?.subscriptions.active ?? 0} active`, color: 'text-emerald-400' },
-                { href: '/admin/payouts',        icon: Wallet,    label: 'Payouts',             desc: `${summary?.payouts.on_hold ?? 0} on hold`,  color: 'text-amber-400' },
+                { href: '/admin/subscriptions', icon: CheckCircle, label: 'Subscriptions',     desc: `${summary?.subscriptions?.active ?? 0} active`, color: 'text-emerald-400' },
+                { href: '/admin/payouts',        icon: Wallet,    label: 'Payouts',             desc: `${summary?.payouts?.on_hold ?? 0} on hold`,  color: 'text-amber-400' },
                 { href: '/admin/analytics',      icon: BarChart2, label: 'Full Analytics',      desc: 'Charts & trends',          color: 'text-violet-400' },
                 { href: '/rbac',                 icon: Shield,    label: 'Roles & Permissions', desc: `${totalRoles} roles`,       color: 'text-blue-400' },
                 { href: '/tokens',               icon: Key,       label: 'Sessions',            desc: `${activeSessions} active`, color: 'text-purple-400' },
@@ -205,7 +205,7 @@ export default function AdminDashboardPage() {
               { label: 'Total Users',     value: totalUsers,      href: '/admin/users', icon: Users     },
               { label: 'Active Sessions', value: activeSessions,  href: '/tokens',      icon: Key       },
               { label: 'Roles',           value: totalRoles,      href: '/rbac',        icon: Shield    },
-              { label: 'Ground Owners',   value: summary?.grounds.total_owners ?? '—', href: '/admin/users', icon: UserX },
+              { label: 'Ground Owners',   value: summary?.grounds?.total_owners ?? '—', href: '/admin/users', icon: UserX },
             ].map((item) => (
               <Link
                 key={item.label}

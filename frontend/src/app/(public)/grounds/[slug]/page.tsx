@@ -98,9 +98,12 @@ function GroundDetailClient({ slug }: { slug: string }) {
     );
   }
 
+  const hasSelectedSlot = !!selectedSlot;
   const bookingHref = (isAuthenticated || hasAccessToken)
-    ? `/grounds/${slug}/book?slot_start=${selectedSlot?.start_time}&slot_end=${selectedSlot?.end_time}&date=${selectedDate}&ground_id=${ground.id}`
-    : `/login?redirect=/grounds/${slug}`;
+    ? (hasSelectedSlot
+      ? `/grounds/${slug}/book?slot_start=${selectedSlot.start_time}&slot_end=${selectedSlot.end_time}&date=${selectedDate}&ground_id=${ground.id}`
+      : '#')
+    : `/login?redirect=${encodeURIComponent(`/grounds/${slug}`)}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">

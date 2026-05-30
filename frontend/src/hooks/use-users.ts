@@ -15,6 +15,7 @@ export function useCurrentUser() {
       setUser(response.data);
       return response.data;
     },
+    staleTime: 5 * 60_000,
   });
 }
 

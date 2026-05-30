@@ -2,67 +2,63 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
 import { useAuthStore } from '@/store/auth-store';
 import { apiClient } from '@/lib/api-client';
-import { getEnv } from '@/lib/env';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-const baseURL = getEnv('VITE_API_URL', 'NEXT_PUBLIC_API_URL') || 'http://localhost:8000/api/v1';
+const AUTH_CHECKED_AT_KEY = 'auth_checked_at';
+const AUTH_CHECKED_TOKEN_KEY = 'auth_checked_token';
+const AUTH_CHECK_TTL_MS = 5 * 60_000;
+let validatingUserPromise: Promise<unknown> | null = null;
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, _hasHydrated, setUser, setTokens, logout } = useAuthStore();
+  const { _hasHydrated, setUser, logout } = useAuthStore();
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     if (!_hasHydrated) return;
 
     async function initAuth() {
-      // Already authenticated — fetch current user to keep store fresh
-      if (isAuthenticated) {
-        try {
-          const res = await apiClient.get('/users/me');
-          setUser(res.data);
-        } catch {
-          // access token invalid — fall through to refresh attempt below
-          // (api-client interceptor already handles 401 refresh, but we catch here too)
-        }
-        setIsInitializing(false);
-        return;
-      }
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const hasAccessToken = !!accessToken;
+      const hasRefreshToken = typeof window !== 'undefined' && !!localStorage.getItem('refresh_token');
 
-      // Not authenticated — check if a refresh token is stored
-      const refreshToken =
-        typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-
-      if (!refreshToken) {
-        // No refresh token at all → go to login
+      if (!hasAccessToken && !hasRefreshToken) {
         router.push('/login');
         setIsInitializing(false);
         return;
       }
 
-      // Try to exchange the refresh token for a new token pair
-      try {
-        const refreshRes = await axios.post(
-          `${baseURL}/auth/refresh/`,
-          { refresh_token: refreshToken },
-          { params: { set_cookie: false } }
-        );
-        const { access, refresh } = refreshRes.data;
-        setTokens(access, refresh);
+      if (hasAccessToken && typeof window !== 'undefined' && accessToken) {
+        const lastCheckedAt = Number(sessionStorage.getItem(AUTH_CHECKED_AT_KEY) || '0');
+        const lastCheckedToken = sessionStorage.getItem(AUTH_CHECKED_TOKEN_KEY);
+        if (lastCheckedToken === accessToken && Date.now() - lastCheckedAt < AUTH_CHECK_TTL_MS) {
+          setIsInitializing(false);
+          return;
+        }
+      }
 
-        // Fetch user with the new access token
-        const userRes = await apiClient.get('/users/me', {
-          headers: { Authorization: `Bearer ${access}` },
-        });
+      try {
+        // Deduplicate user validation when multiple protected routes mount together.
+        if (!validatingUserPromise) {
+          validatingUserPromise = apiClient.get('/users/me').finally(() => {
+            validatingUserPromise = null;
+          });
+        }
+        const userRes = await validatingUserPromise;
         setUser(userRes.data);
+        if (typeof window !== 'undefined') {
+          const freshAccessToken = localStorage.getItem('access_token');
+          if (freshAccessToken) {
+            sessionStorage.setItem(AUTH_CHECKED_AT_KEY, String(Date.now()));
+            sessionStorage.setItem(AUTH_CHECKED_TOKEN_KEY, freshAccessToken);
+          }
+        }
       } catch {
-        // Refresh failed (token expired / revoked) → clear everything and go to login
         logout();
         router.push('/login');
       } finally {
@@ -71,20 +67,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     }
 
     initAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [_hasHydrated]);
+  }, [_hasHydrated, router, setUser, logout]);
 
   // While Zustand is rehydrating from localStorage or we're attempting a refresh
   if (!_hasHydrated || isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
-  // Refresh failed and router.push('/login') is in-flight — show spinner
-  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />

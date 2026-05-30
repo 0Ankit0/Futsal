@@ -17,6 +17,40 @@ export interface SubscriptionPlan {
   is_active: boolean;
 }
 
+type RawSubscriptionPlan = Omit<SubscriptionPlan, 'features'> & {
+  features: string[] | string | null;
+};
+
+function normalizeFeatures(features: RawSubscriptionPlan['features']): string[] {
+  if (Array.isArray(features)) {
+    return features.filter((item): item is string => typeof item === 'string');
+  }
+  if (typeof features !== 'string' || features.trim() === '') {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(features);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item): item is string => typeof item === 'string');
+    }
+  } catch {
+    // Fall back to comma/newline separated values.
+  }
+
+  return features
+    .split(/[\n,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizePlan(plan: RawSubscriptionPlan): SubscriptionPlan {
+  return {
+    ...plan,
+    features: normalizeFeatures(plan.features),
+  };
+}
+
 export interface OwnerSubscription {
   status: SubscriptionStatus;
   plan: SubscriptionPlan | null;
@@ -41,7 +75,13 @@ export function useSubscription() {
     queryKey: ['subscription', 'me'],
     queryFn: async () => {
       const { data } = await apiClient.get<OwnerSubscription>('/subscriptions/me');
-      return data;
+      if (!data.plan) {
+        return data;
+      }
+      return {
+        ...data,
+        plan: normalizePlan(data.plan as RawSubscriptionPlan),
+      };
     },
   });
 }
@@ -50,8 +90,8 @@ export function useSubscriptionPlans() {
   return useQuery({
     queryKey: ['subscription-plans'],
     queryFn: async () => {
-      const { data } = await apiClient.get<SubscriptionPlan[]>('/subscriptions/plans');
-      return data;
+      const { data } = await apiClient.get<RawSubscriptionPlan[]>('/subscriptions/plans');
+      return data.map(normalizePlan);
     },
   });
 }
